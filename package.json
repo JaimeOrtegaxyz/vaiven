@@ -1,0 +1,32 @@
+{
+  "name": "vaiven",
+  "version": "0.1.0",
+  "description": "Calm, perpetually looping generative figures for the web. Zero-dependency Canvas 2D engine — every animation is a JSON config.",
+  "type": "module",
+  "license": "MIT",
+  "author": "Jaime Ortega",
+  "exports": {
+    ".": "./src/figure.js",
+    "./element": "./src/figure-element.js"
+  },
+  "files": [
+    "src"
+  ],
+  "sideEffects": [
+    "./src/figure-element.js"
+  ],
+  "keywords": [
+    "generative-art",
+    "generative",
+    "canvas",
+    "animation",
+    "web-component",
+    "zero-dependency",
+    "figures",
+    "loop"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/JaimeOrtegaxyz/vaiven"
+  }
+}

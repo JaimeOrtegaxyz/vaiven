@@ -1,0 +1,19 @@
+{
+  "layout": "spiral",
+  "shape": "circle",
+  "count": 80,
+  "size": 1.08,
+  "floor": 0.48,
+  "aspect": 1.7,
+  "roundness": 0,
+  "freq": 1.6,
+  "noise": 0,
+  "twist": 3.2,
+  "twirl": 0.2,
+  "velocity": 1.1,
+  "ampX": 0.85,
+  "ampY": 0.85,
+  "zoom": 1,
+  "mirror": "x",
+  "lineWidth": 0.5
+}

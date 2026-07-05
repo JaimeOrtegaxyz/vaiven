@@ -1,0 +1,19 @@
+{
+  "layout": "wave-x",
+  "shape": "circle",
+  "count": 65,
+  "size": 1.69,
+  "floor": 0.11,
+  "aspect": 1.44,
+  "roundness": 0,
+  "freq": 1.47,
+  "noise": 0,
+  "twist": 4.72,
+  "twirl": 0,
+  "velocity": 1.2,
+  "ampX": 0.87,
+  "ampY": 1.15,
+  "zoom": 1,
+  "mirror": "off",
+  "lineWidth": 0.5
+}

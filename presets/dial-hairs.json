@@ -1,0 +1,19 @@
+{
+  "layout": "dial",
+  "shape": "circle",
+  "count": 30,
+  "size": 1.11,
+  "floor": 0.54,
+  "aspect": 1,
+  "roundness": 0,
+  "freq": 1,
+  "noise": 0.4,
+  "twist": 1.2,
+  "twirl": 0.25,
+  "velocity": 0.9,
+  "ampX": 0.8,
+  "ampY": 0.8,
+  "zoom": 1,
+  "mirror": "off",
+  "lineWidth": 0.45
+}

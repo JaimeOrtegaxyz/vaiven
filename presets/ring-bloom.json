@@ -1,0 +1,19 @@
+{
+  "layout": "ring",
+  "shape": "circle",
+  "count": 56,
+  "size": 1.73,
+  "floor": 0.21,
+  "aspect": 1.25,
+  "roundness": 0,
+  "freq": 1,
+  "noise": 0,
+  "twist": 2.4,
+  "twirl": 0.35,
+  "velocity": 0.9,
+  "ampX": 0.9,
+  "ampY": 0.9,
+  "zoom": 1,
+  "mirror": "off",
+  "lineWidth": 0.5
+}

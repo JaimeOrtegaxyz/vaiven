@@ -1,0 +1,19 @@
+{
+  "layout": "matrix",
+  "shape": "circle",
+  "count": 64,
+  "size": 0.8,
+  "floor": 0.38,
+  "aspect": 1,
+  "roundness": 0,
+  "freq": 1.4,
+  "noise": 0,
+  "twist": 0.8,
+  "twirl": 0.12,
+  "velocity": 0.9,
+  "ampX": 0.9,
+  "ampY": 0.9,
+  "zoom": 1,
+  "mirror": "off",
+  "lineWidth": 0.5
+}

@@ -1,0 +1,1155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Vaivén — Playground</title>
+<style>
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
+    src: url("../assets/fonts/ibm-plex-mono-400.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-weight: 500; font-display: swap;
+    src: url("../assets/fonts/ibm-plex-mono-500.woff2") format("woff2");
+  }
+  @font-face {
+    font-family: "IBM Plex Mono"; font-style: normal; font-weight: 600; font-display: swap;
+    src: url("../assets/fonts/ibm-plex-mono-600.woff2") format("woff2");
+  }
+  :root {
+    --paper: #F6F5F1;
+    --panel: #FBFAF8;
+    --ink: #1E1E1E;
+    --line: #D8D5CC;
+    --faint: #8B887F;
+    --mono: "IBM Plex Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; background: var(--paper); color: var(--ink);
+    font: 13px/1.5 var(--mono);
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column;
+  }
+  ::selection { background: var(--ink); color: var(--paper); }
+  header {
+    flex: none; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap;
+  }
+  header h1 { font: 600 13px var(--mono); letter-spacing: 0.14em; margin: 0; }
+  .btns { display: flex; gap: 8px; flex-wrap: wrap; }
+  button.ui {
+    font: 12px var(--mono); letter-spacing: 0.06em;
+    background: transparent; color: var(--ink); border: 1px solid var(--line);
+    padding: 6px 10px; cursor: pointer; border-radius: 3px;
+    transition: border-color .15s cubic-bezier(0.2,0,0,1), background-color .15s cubic-bezier(0.2,0,0,1), transform .1s cubic-bezier(0.2,0,0,1);
+  }
+  button.ui:hover { border-color: var(--ink); background: rgba(30,30,30,.04); }
+  button.ui:active { transform: scale(0.96); }
+  .btns .sep { width: 1px; align-self: stretch; background: var(--line); margin: 2px 4px; }
+
+  .wrap { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) 348px; min-height: 0; }
+  @media (max-width: 940px) { .wrap { grid-template-columns: 1fr; } .sidebar { margin: 0 16px 16px; } }
+
+  .stage-col {
+    overflow-y: auto; padding: 22px;
+    display: flex; flex-direction: column; align-items: center; gap: 22px;
+  }
+  .frame {
+    position: relative; border: 1px solid var(--line); background-color: var(--paper);
+    border-radius: 4px; overflow: hidden;
+    aspect-ratio: 340 / 270; flex: none;
+    width: min(100%, 880px, calc((100dvh - 350px) * 1.26));
+    min-width: 260px;
+    box-shadow: 0 1px 2px rgba(30,30,30,.03), 0 16px 40px rgba(30,30,30,.05);
+  }
+  .frame canvas { position: absolute; inset: 0; width: 100%; height: 100%; cursor: pointer; }
+
+  .strips { width: min(100%, 880px); display: flex; flex-direction: column; gap: 18px; }
+  .strip h2 {
+    font: 600 11px var(--mono); letter-spacing: .14em;
+    color: var(--faint); margin: 0 0 8px;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
+  .card {
+    position: relative; display: flex; flex-direction: column; text-align: left;
+    border: 1px solid var(--line); background: var(--paper); cursor: pointer; padding: 0;
+    font: inherit; color: inherit; border-radius: 4px; overflow: hidden;
+    transition: border-color .15s cubic-bezier(0.2,0,0,1);
+  }
+  .card:hover { border-color: var(--faint); }
+  .card.sel { border-color: var(--ink); }
+  .card.sel .tag { border-top-color: var(--ink); }
+  .card .thumb { display: block; position: relative; width: 100%; aspect-ratio: 340 / 270; overflow: hidden; }
+  .card canvas { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+  .card .tag {
+    display: block; padding: 3px 6px 4px; font: 9px var(--mono);
+    letter-spacing: .08em; color: var(--faint); text-transform: uppercase;
+    border-top: 1px solid var(--line);
+  }
+  .card.sel .tag { color: var(--ink); }
+  .card.upload .thumb {
+    display: flex; align-items: center; justify-content: center;
+    color: var(--faint); font: 11px var(--mono); letter-spacing: .08em;
+  }
+  .card.upload { border-style: dashed; }
+  .card.upload:hover .thumb { color: var(--ink); }
+
+  .sidebar {
+    overflow-y: auto; margin: 16px 16px 18px 0;
+    border: 1px solid var(--line); border-radius: 8px;
+    padding: 16px 18px 40px; background: var(--panel);
+    box-shadow: 0 1px 2px rgba(30,30,30,.04), 0 12px 32px rgba(30,30,30,.06);
+  }
+  .sidebar h2 {
+    font: 600 11px var(--mono); letter-spacing: .14em;
+    color: var(--faint); margin: 18px 0 6px;
+  }
+  .sidebar h2:first-child { margin-top: 0; }
+  .sidebar h2:not(:first-child) {
+    margin-top: 22px; padding-top: 14px;
+    border-top: 1px solid color-mix(in srgb, var(--line) 55%, transparent);
+  }
+  .row { display: grid; grid-template-columns: 92px 1fr 48px; align-items: center; gap: 8px; margin: 3px 0; }
+  .row label { font: 11px var(--mono); white-space: nowrap; }
+  .row .val {
+    font: 11px var(--mono); border: 1px solid transparent; background: transparent;
+    color: var(--faint); padding: 3px 3px; border-radius: 3px; width: 100%; text-align: right;
+    cursor: text;
+  }
+  .row .val:hover { border-color: var(--line); }
+  .row .val:focus {
+    border-color: var(--ink); background: var(--paper); color: var(--ink); outline: none;
+  }
+  .val::-webkit-outer-spin-button, .val::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .i { color: var(--faint); cursor: help; font-size: 10px; margin-left: 3px; }
+  input[type=range] {
+    -webkit-appearance: none; appearance: none;
+    width: 100%; height: 20px; margin: 0; background: transparent; cursor: pointer;
+  }
+  input[type=range]::-webkit-slider-runnable-track {
+    height: 2px; border-radius: 1px;
+    background: color-mix(in srgb, var(--line) 55%, transparent);
+    transition: background-color .15s cubic-bezier(0.2,0,0,1);
+  }
+  input[type=range]:hover::-webkit-slider-runnable-track { background: var(--line); }
+  input[type=range]::-webkit-slider-thumb {
+    -webkit-appearance: none; width: 11px; height: 11px; margin-top: -4.5px;
+    border-radius: 50%; background: var(--panel); border: 1.5px solid var(--ink);
+    box-shadow: 0 1px 2px rgba(30,30,30,.12);
+    transition: background-color .15s cubic-bezier(0.2,0,0,1), transform .15s cubic-bezier(0.2,0,0,1);
+  }
+  input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.18); }
+  input[type=range]:active::-webkit-slider-thumb { background: var(--ink); transform: scale(1.18); }
+  input[type=range]::-moz-range-track {
+    height: 2px; border-radius: 1px;
+    background: color-mix(in srgb, var(--line) 55%, transparent);
+  }
+  input[type=range]:hover::-moz-range-track { background: var(--line); }
+  input[type=range]::-moz-range-thumb {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--panel); border: 1.5px solid var(--ink);
+  }
+  input[type=range]:focus-visible { outline: 2px solid var(--ink); outline-offset: 4px; border-radius: 2px; }
+  select {
+    font: 12px var(--mono); border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); padding: 4px 6px; border-radius: 3px; width: 100%;
+  }
+  .seg2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin: 4px 0; }
+  .seg2 button {
+    font: 10px var(--mono); letter-spacing: .04em;
+    border: 1px solid var(--line); background: transparent; color: var(--ink);
+    padding: 5px 0; cursor: pointer; border-radius: 3px;
+    transition: background-color .15s cubic-bezier(0.2,0,0,1), color .15s cubic-bezier(0.2,0,0,1), border-color .15s cubic-bezier(0.2,0,0,1), transform .1s cubic-bezier(0.2,0,0,1);
+  }
+  .seg2 button:hover { border-color: var(--ink); }
+  .seg2 button:active { transform: scale(0.96); }
+  .seg2 button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+
+  .colorrow { display: grid; grid-template-columns: 34px 1fr 54px 14px; gap: 6px; align-items: center; margin: 4px 0; }
+  .swatch {
+    width: 34px; height: 26px; border: 1px solid var(--line); border-radius: 3px;
+    cursor: pointer; padding: 0;
+    box-shadow: inset 0 0 0 1px rgba(255,255,255,.35);
+    transition: border-color .15s cubic-bezier(0.2,0,0,1), transform .1s cubic-bezier(0.2,0,0,1);
+  }
+  .swatch:hover { border-color: var(--ink); }
+  .swatch:active { transform: scale(0.96); }
+  .colorrow .hex {
+    font: 11px var(--mono); border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); padding: 4px 4px; border-radius: 3px; width: 100%; text-transform: uppercase;
+  }
+  .colorrow .del { border: none; background: none; color: var(--faint); cursor: pointer; font-size: 13px; padding: 0; }
+  .colorrow .del:hover { color: var(--ink); }
+  .colorrow.off .swatch, .colorrow.off input { opacity: 0.35; pointer-events: none; }
+  .pctwrap { display: flex; align-items: center; gap: 2px; color: var(--faint); font: 10px var(--mono); }
+  .pct {
+    width: 38px; font: 11px var(--mono); border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); padding: 3px 3px; border-radius: 3px; text-align: right;
+  }
+  .pct::-webkit-outer-spin-button, .pct::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .mini {
+    font: 10px var(--mono); letter-spacing: .06em;
+    border: 1px dashed var(--line); background: transparent; color: var(--faint);
+    padding: 5px 8px; cursor: pointer; border-radius: 3px; width: 100%; margin: 2px 0 4px;
+    transition: color .15s cubic-bezier(0.2,0,0,1), border-color .15s cubic-bezier(0.2,0,0,1);
+  }
+  .mini:hover { color: var(--ink); border-color: var(--ink); }
+  .sub { font: 10px var(--mono); letter-spacing: .1em; color: var(--faint); margin: 10px 0 2px; }
+  .check { display: flex; align-items: center; gap: 6px; font: 11px var(--mono); cursor: pointer; margin: 6px 0; }
+  .check input { accent-color: var(--ink); margin: 0; }
+
+  /* custom color picker */
+  #picker {
+    position: fixed; display: none; z-index: 25; width: 214px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 10px; box-shadow: 0 2px 6px rgba(30,30,30,.08), 0 16px 40px rgba(30,30,30,.16);
+    animation: rise-in .14s cubic-bezier(0.2,0,0,1);
+  }
+  .pk-sv { position: relative; height: 122px; border: 1px solid var(--line); cursor: crosshair; margin-bottom: 8px; }
+  .pk-bar { position: relative; height: 14px; border: 1px solid var(--line); cursor: ew-resize; }
+  .pk-hue {
+    margin-bottom: 8px;
+    background: linear-gradient(to right, #f00, #ff0 17%, #0f0 33%, #0ff 50%, #00f 67%, #f0f 83%, #f00);
+  }
+  .pk-dot {
+    position: absolute; width: 12px; height: 12px; border: 2px solid #fff;
+    outline: 1px solid rgba(0,0,0,.45); border-radius: 50%;
+    transform: translate(-50%, -50%); pointer-events: none; top: 50%; left: 0;
+  }
+  .pk-alpha-row { display: flex; gap: 6px; align-items: center; margin-bottom: 8px; }
+  .pk-alpha-row .pk-bar { flex: 1; }
+  .pk-fields { display: grid; grid-template-columns: 1fr 38px 38px 38px; gap: 6px; }
+  .pk-fields .hex {
+    font: 11px var(--mono); border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); padding: 4px 4px; border-radius: 3px; width: 100%; text-transform: uppercase;
+  }
+  .pk-num {
+    font: 11px var(--mono); border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink); padding: 4px 2px; border-radius: 3px; width: 100%; text-align: right;
+  }
+  .pk-num::-webkit-outer-spin-button, .pk-num::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+
+  #tip {
+    position: fixed; display: none; z-index: 30; max-width: 230px;
+    background: var(--ink); color: var(--paper); font: 10px/1.5 var(--mono);
+    padding: 6px 8px; border-radius: 4px; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(30,30,30,.18);
+    animation: rise-in .12s cubic-bezier(0.2,0,0,1);
+  }
+  @keyframes rise-in {
+    from { opacity: 0; transform: translateY(3px); }
+  }
+  #toast {
+    position: fixed; bottom: 18px; left: 50%;
+    background: var(--ink); color: var(--paper); font: 12px var(--mono);
+    padding: 8px 14px; border-radius: 4px; pointer-events: none; z-index: 40;
+    opacity: 0; transform: translate(-50%, 6px);
+    transition: opacity .18s cubic-bezier(0.2,0,0,1), transform .18s cubic-bezier(0.2,0,0,1);
+  }
+  #toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .val, .pct, .hex, .pk-num { font-variant-numeric: tabular-nums; }
+  input[type=text]:focus, input[type=number]:focus, select:focus { border-color: var(--ink); outline: none; }
+  button:focus-visible, select:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; animation: none !important; }
+  }
+  footer {
+    flex: none; padding: 10px 20px; border-top: 1px solid var(--line);
+    color: var(--faint); font: 11px var(--mono); letter-spacing: .06em;
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>VAIVÉN</h1>
+  <div class="btns">
+    <button class="ui" id="btn-undo" title="⌘Z">UNDO</button>
+    <button class="ui" id="btn-redo" title="⇧⌘Z">REDO</button>
+    <span class="sep"></span>
+    <button class="ui" id="btn-random">RANDOM [R]</button>
+    <button class="ui" id="btn-reset">RESET [0]</button>
+    <span class="sep"></span>
+    <button class="ui" id="btn-copy">COPY CONFIG</button>
+    <button class="ui" id="btn-embed">COPY EMBED</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="stage-col">
+    <div class="frame"><canvas id="main-canvas"></canvas></div>
+    <div class="strips">
+      <div class="strip">
+        <h2>PATTERN</h2>
+        <div class="cards" id="patterns"></div>
+      </div>
+      <div class="strip">
+        <h2>SHAPE</h2>
+        <div class="cards" id="shapes"></div>
+      </div>
+    </div>
+  </div>
+  <div class="sidebar" id="controls"></div>
+</div>
+
+<footer>R random · 0 reset · ⌘Z undo · ⇧⌘Z redo · the config lives in the URL hash — share it</footer>
+<div id="toast"></div>
+<input type="file" id="svg-file" accept=".svg,image/svg+xml" hidden>
+
+<script type="module">
+import {
+  createFigure, DEFAULTS, FALLBACK, mergeConfig, randomConfig, LAYOUTS, SHAPES, BLENDS,
+} from "../src/figure.js";
+
+const $ = (s) => document.querySelector(s);
+const el = (tag, cls) => {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  return n;
+};
+
+// ---------------------------------------------------------------- main figure
+const fig = createFigure($("#main-canvas"), {});
+
+// ------------------------------------------------------------------- tooltips
+const tip = el("div");
+tip.id = "tip";
+document.body.append(tip);
+function attachTip(target, text) {
+  target.addEventListener("mouseenter", () => {
+    tip.textContent = text;
+    tip.style.display = "block";
+    const r = target.getBoundingClientRect();
+    const th = tip.offsetHeight;
+    let top = r.bottom + 6;
+    if (top + th > innerHeight - 8) top = r.top - th - 6;
+    tip.style.left = Math.min(Math.max(8, r.left), innerWidth - 240) + "px";
+    tip.style.top = top + "px";
+  });
+  target.addEventListener("mouseleave", () => {
+    tip.style.display = "none";
+  });
+}
+
+// ------------------------------------------------------------------ color math
+function hexToRgb(hex) {
+  let h = String(hex).replace("#", "");
+  if (h.length === 3) h = h.split("").map((c) => c + c).join("");
+  const n = parseInt(h, 16);
+  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+}
+function rgbToHex(r, g, b) {
+  return "#" + [r, g, b]
+    .map((v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, "0"))
+    .join("").toUpperCase();
+}
+function rgbToHsv(r, g, b) {
+  r /= 255; g /= 255; b /= 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b), d = max - min;
+  let h = 0;
+  if (d) {
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, max ? d / max : 0, max];
+}
+function hsvToRgb(h, s, v) {
+  const c = v * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = v - c;
+  const [r, g, b] =
+    h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+    h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  return [(r + m) * 255, (g + m) * 255, (b + m) * 255];
+}
+const normHex = (s) => {
+  s = "#" + String(s).trim().replace(/^#/, "");
+  return /^#[0-9a-fA-F]{6}$/.test(s) ? s.toUpperCase() : null;
+};
+
+// --------------------------------------------------------- custom color picker
+// hex + rgb shown together, no HSL, opacity slider in percent.
+const picker = el("div");
+picker.id = "picker";
+picker.innerHTML = `
+  <div class="pk-sv"><span class="pk-dot"></span></div>
+  <div class="pk-bar pk-hue"><span class="pk-dot"></span></div>
+  <div class="pk-alpha-row">
+    <div class="pk-bar pk-alpha"><span class="pk-dot"></span></div>
+    <span class="pctwrap"><input class="pct pk-apct" type="number" min="0" max="100" step="1">%</span>
+  </div>
+  <div class="pk-fields">
+    <input class="hex pk-hex" type="text" spellcheck="false">
+    <input class="pk-num pk-r" type="number" min="0" max="255" step="1">
+    <input class="pk-num pk-g" type="number" min="0" max="255" step="1">
+    <input class="pk-num pk-b" type="number" min="0" max="255" step="1">
+  </div>`;
+document.body.append(picker);
+const pkSv = picker.querySelector(".pk-sv");
+const pkSvDot = pkSv.querySelector(".pk-dot");
+const pkHue = picker.querySelector(".pk-hue");
+const pkHueDot = pkHue.querySelector(".pk-dot");
+const pkAlphaRow = picker.querySelector(".pk-alpha-row");
+const pkAlpha = picker.querySelector(".pk-alpha");
+const pkAlphaDot = pkAlpha.querySelector(".pk-dot");
+const pkApct = picker.querySelector(".pk-apct");
+const pkHex = picker.querySelector(".pk-hex");
+const pkR = picker.querySelector(".pk-r");
+const pkG = picker.querySelector(".pk-g");
+const pkB = picker.querySelector(".pk-b");
+
+const pk = { h: 0, s: 0, v: 0, alpha: 1, hasAlpha: false, onColor: null, onAlpha: null, anchor: null, open: false };
+const clamp01 = (v) => Math.max(0, Math.min(1, v));
+
+function pkColor() {
+  const [r, g, b] = hsvToRgb(pk.h, pk.s, pk.v);
+  return rgbToHex(r, g, b);
+}
+function renderPicker() {
+  const [r, g, b] = hsvToRgb(pk.h, pk.s, pk.v).map(Math.round);
+  pkSv.style.background =
+    `linear-gradient(to top, #000, rgba(0,0,0,0)), linear-gradient(to right, #fff, hsl(${pk.h} 100% 50%))`;
+  pkSvDot.style.left = pk.s * 100 + "%";
+  pkSvDot.style.top = (1 - pk.v) * 100 + "%";
+  pkHueDot.style.left = (pk.h / 360) * 100 + "%";
+  pkAlphaRow.style.display = pk.hasAlpha ? "" : "none";
+  if (pk.hasAlpha) {
+    pkAlpha.style.background =
+      `linear-gradient(to right, rgba(${r},${g},${b},0), rgb(${r},${g},${b})), ` +
+      `repeating-conic-gradient(#D8D5CC 0% 25%, #FFFFFF 0% 50%) 0 0 / 8px 8px`;
+    pkAlphaDot.style.left = pk.alpha * 100 + "%";
+    pkApct.value = Math.round(pk.alpha * 100);
+  }
+  pkHex.value = rgbToHex(r, g, b);
+  pkR.value = r;
+  pkG.value = g;
+  pkB.value = b;
+}
+function pkEmit() {
+  pk.onColor?.(pkColor());
+}
+function pkSetFromHex(hex) {
+  const [r, g, b] = hexToRgb(hex);
+  [pk.h, pk.s, pk.v] = rgbToHsv(r, g, b);
+}
+function dragBar(elm, cb) {
+  elm.addEventListener("pointerdown", (e) => {
+    elm.setPointerCapture(e.pointerId);
+    const move = (ev) => {
+      const rect = elm.getBoundingClientRect();
+      cb(clamp01((ev.clientX - rect.left) / rect.width), clamp01((ev.clientY - rect.top) / rect.height));
+    };
+    move(e);
+    elm.addEventListener("pointermove", move);
+    elm.addEventListener("pointerup", () => elm.removeEventListener("pointermove", move), { once: true });
+  });
+}
+dragBar(pkSv, (x, y) => {
+  pk.s = x;
+  pk.v = 1 - y;
+  renderPicker();
+  pkEmit();
+});
+dragBar(pkHue, (x) => {
+  pk.h = Math.min(359.9, x * 360);
+  renderPicker();
+  pkEmit();
+});
+dragBar(pkAlpha, (x) => {
+  pk.alpha = x;
+  renderPicker();
+  pk.onAlpha?.(pk.alpha);
+});
+pkApct.addEventListener("change", () => {
+  let v = Math.round(+pkApct.value);
+  if (!Number.isFinite(v)) v = 100;
+  pk.alpha = clamp01(v / 100);
+  renderPicker();
+  pk.onAlpha?.(pk.alpha);
+});
+pkHex.addEventListener("change", () => {
+  const v = normHex(pkHex.value);
+  if (v) {
+    pkSetFromHex(v);
+    pkEmit();
+  }
+  renderPicker();
+});
+for (const [input, ch] of [[pkR, 0], [pkG, 1], [pkB, 2]]) {
+  input.addEventListener("change", () => {
+    const rgb = hsvToRgb(pk.h, pk.s, pk.v).map(Math.round);
+    let v = Math.round(+input.value);
+    if (!Number.isFinite(v)) v = rgb[ch];
+    rgb[ch] = Math.max(0, Math.min(255, v));
+    [pk.h, pk.s, pk.v] = rgbToHsv(rgb[0], rgb[1], rgb[2]);
+    renderPicker();
+    pkEmit();
+  });
+}
+function openPicker(anchor, opts) {
+  pkSetFromHex(opts.color);
+  pk.alpha = opts.alpha ?? 1;
+  pk.hasAlpha = opts.alpha != null;
+  pk.onColor = opts.onColor;
+  pk.onAlpha = opts.onAlpha || null;
+  pk.anchor = anchor;
+  pk.open = true;
+  picker.style.display = "block";
+  renderPicker();
+  const r = anchor.getBoundingClientRect();
+  const ph = picker.offsetHeight;
+  let top = r.bottom + 6;
+  if (top + ph > innerHeight - 8) top = Math.max(8, r.top - ph - 6);
+  picker.style.left = Math.max(8, Math.min(r.left, innerWidth - 224)) + "px";
+  picker.style.top = top + "px";
+}
+function closePicker() {
+  pk.open = false;
+  pk.anchor = null;
+  picker.style.display = "none";
+}
+document.addEventListener("pointerdown", (e) => {
+  if (!pk.open) return;
+  if (picker.contains(e.target) || e.target === pk.anchor) return;
+  closePicker();
+}, true);
+
+// --------------------------------------------------------- control definitions
+const LOG5 = Math.log(5);
+const INFO = {
+  aspect: ["Aspect", "Wide vs tall. 1 = unchanged; both directions are equally strong."],
+  roundness: ["Roundness", "Rounds the corners of angular shapes. Circles are already fully round."],
+  size: ["Size", "Size of the largest shapes."],
+  floor: ["Min size", "How small the smallest shapes get, relative to Size. 1 = all equal."],
+  noise: ["Jitter", "Irregular per-shape size variation. 0 = perfectly smooth."],
+  count: ["Count", "How many copies of the shape are drawn."],
+  ampX: ["Spread X", "How far the pattern extends horizontally. The pointer nudges this live."],
+  ampY: ["Spread Y", "How far the pattern extends vertically. The pointer nudges this live."],
+  zoom: ["Zoom", "Camera framing — closer or wider. Composition and stroke width stay as they are."],
+  offsetX: ["Offset X", "Shifts the view horizontally. At ±1 the figure's center sits at the edge; beyond, it slides out."],
+  offsetY: ["Offset Y", "Shifts the view vertically. At ±1 the figure's center sits at the edge; beyond, it slides out."],
+  rotate: ["Rotation", "Rotates the whole view, in degrees."],
+  freq: ["Waves", "How many wave cycles the pattern makes across its sweep."],
+  twist: ["Twist", "Each successive shape rotates a little more — the pitch of the fan."],
+  orbit: ["Orbit", "Each shape circles a secondary center as it travels — makes coils, tubes and clusters. 0 = off."],
+  coil: ["Coils", "How many times the orbit winds around the path across the sweep. Only matters when Orbit is on."],
+  kaleido: ["Radial", "Repeats the whole figure this many times around the center. 1 = off."],
+  velocity: ["Speed", "Overall pace of the animation."],
+  twirl: ["Spin", "The whole figure rotates slowly over time."],
+  trail: ["Trails", "Old frames fade instead of clearing — motion leaves streaks."],
+  fillAlpha: ["Fill opacity", "Opacity of every shape's body, in percent."],
+  strokeAlpha: ["Stroke opacity", "Opacity of the outline, in percent."],
+  lineWidth: ["Stroke width", "Outline thickness. 0 = no outline."],
+  blend: ["Blend", "How overlapping shapes mix: multiply darkens, screen and lighter glow."],
+  mirror: ["Symmetry", "Reflect the figure. Toggle each axis; both on mirrors both ways."],
+};
+
+// [key, sliderMin, sliderMax, step, mode] — "log" maps slider -1..1 to 0.2..5
+const SECTIONS = [
+  ["SHAPE", [["aspect", -1, 1, 0.01, "log"], ["roundness", 0, 1, 0.01]]],
+  ["SIZE", [["size", 0.1, 4, 0.01], ["floor", 0, 1, 0.01], ["noise", 0, 1.5, 0.01]]],
+  ["COMPOSITION", [["count", 1, 200, 1], ["ampX", 0, 2, 0.01], ["ampY", 0, 2, 0.01]]],
+  ["VIEW", [["zoom", 0.2, 6, 0.01], ["offsetX", -1.5, 1.5, 0.01], ["offsetY", -1.5, 1.5, 0.01], ["rotate", -180, 180, 1]]],
+  ["FORM", [["freq", 0.1, 6, 0.01], ["twist", 0, 15, 0.01], ["orbit", 0, 1, 0.01], ["coil", 1, 32, 1]]],
+  ["MOTION", [["velocity", 0, 4, 0.01], ["twirl", 0, 2, 0.01], ["trail", 0, 0.98, 0.01]]],
+  ["INK", [["lineWidth", 0, 4, 0.05]]],
+];
+
+const controls = $("#controls");
+const inputs = {}; // key -> { inp, out, to, from }
+const fmt = (v) => String(Math.round(v * 100) / 100);
+
+// assigned by buildSymmetry() / buildBlend() during the sections loop
+let symButtons = null;
+let blendSel = null;
+
+function addHeader(text) {
+  const h = el("h2");
+  h.textContent = text;
+  controls.append(h);
+}
+
+function labelFor(key) {
+  const lab = el("label");
+  lab.textContent = INFO[key][0];
+  const i = el("span", "i");
+  i.textContent = "ⓘ";
+  attachTip(i, INFO[key][1]);
+  lab.append(i);
+  return lab;
+}
+
+function addSlider(key, min, max, step, mode) {
+  const to = mode === "log" ? (v) => Math.pow(5, v) : (v) => v;
+  const from = mode === "log"
+    ? (v) => Math.log(Math.max(0.2, Math.min(5, v))) / LOG5
+    : (v) => v;
+  const row = el("div", "row");
+  const inp = el("input");
+  inp.type = "range";
+  inp.min = min;
+  inp.max = max;
+  inp.step = step;
+  const out = el("input", "val");
+  out.type = "number";
+  out.step = "any";
+  out.addEventListener("focus", () => out.select());
+  inp.addEventListener("input", () => {
+    const val = to(+inp.value);
+    patch({ [key]: val });
+    out.value = fmt(val);
+  });
+  out.addEventListener("change", () => {
+    let v = parseFloat(out.value);
+    if (!Number.isFinite(v)) {
+      out.value = fmt(fig.config[key]);
+      return;
+    }
+    const lo = Math.min(to(min), to(max));
+    const hi = Math.max(to(min), to(max));
+    v = Math.max(lo, Math.min(hi, v));
+    if (step === 1) v = Math.round(v);
+    inp.value = from(v);
+    out.value = fmt(v);
+    patch({ [key]: v });
+  });
+  row.append(labelFor(key), inp, out);
+  controls.append(row);
+  inputs[key] = { inp, out, to, from };
+}
+
+for (const [section, defs] of SECTIONS) {
+  addHeader(section);
+  for (const def of defs) addSlider(...def);
+  if (section === "COMPOSITION") buildSymmetry();
+  if (section === "INK") buildBlend();
+}
+
+// symmetry: two independent axis toggles
+function buildSymmetry() {
+  const sub = el("div", "sub");
+  sub.textContent = "SYMMETRY";
+  attachTip(sub, INFO.mirror[1]);
+  controls.append(sub);
+  const seg = el("div", "seg2");
+  const bx = el("button");
+  bx.type = "button";
+  bx.textContent = "HORIZONTAL";
+  const by = el("button");
+  by.type = "button";
+  by.textContent = "VERTICAL";
+  bx.onclick = () => toggleSym("x");
+  by.onclick = () => toggleSym("y");
+  seg.append(bx, by);
+  controls.append(seg);
+  symButtons = { x: bx, y: by };
+  addSlider("kaleido", 1, 8, 1);
+}
+function toggleSym(axis) {
+  const m = fig.config.mirror;
+  let hx = m === "x" || m === "xy";
+  let vy = m === "y" || m === "xy";
+  if (axis === "x") hx = !hx;
+  else vy = !vy;
+  const next = hx && vy ? "xy" : hx ? "x" : vy ? "y" : "off";
+  patch({ mirror: next });
+  setSym(next);
+}
+function setSym(m) {
+  symButtons.x.classList.toggle("on", m === "x" || m === "xy");
+  symButtons.y.classList.toggle("on", m === "y" || m === "xy");
+}
+
+// blend select
+function buildBlend() {
+  const row = el("div", "row");
+  blendSel = el("select");
+  for (const b of BLENDS) {
+    const opt = el("option");
+    opt.value = b;
+    opt.textContent = b;
+    blendSel.append(opt);
+  }
+  blendSel.style.gridColumn = "2 / 4";
+  blendSel.onchange = () => patch({ blend: blendSel.value });
+  row.append(labelFor("blend"), blendSel);
+  controls.append(row);
+}
+
+// ------------------------------------------------------------------ color UI
+addHeader("COLOR");
+const MAX_STOPS = 6;
+
+function colorPair(value, onChange, alphaOpts = null) {
+  const swatch = el("button", "swatch");
+  swatch.type = "button";
+  const hex = el("input", "hex");
+  hex.type = "text";
+  hex.spellcheck = false;
+  let current = value;
+  const set = (v) => {
+    current = v;
+    swatch.style.background = v;
+    hex.value = v.toUpperCase();
+  };
+  swatch.addEventListener("click", () => {
+    if (pk.open && pk.anchor === swatch) {
+      closePicker();
+      return;
+    }
+    openPicker(swatch, {
+      color: current,
+      alpha: alphaOpts ? alphaOpts.get() : null,
+      onColor: (v) => {
+        set(v);
+        onChange(v);
+      },
+      onAlpha: alphaOpts ? alphaOpts.set : null,
+    });
+  });
+  hex.addEventListener("change", () => {
+    const v = normHex(hex.value);
+    if (v) {
+      set(v);
+      onChange(v);
+    } else {
+      hex.value = current.toUpperCase();
+    }
+  });
+  set(value);
+  return { swatch, hex, set };
+}
+
+function mkPct(title, onChange) {
+  const wrap = el("span", "pctwrap");
+  const inp = el("input", "pct");
+  inp.type = "number";
+  inp.min = 0;
+  inp.max = 100;
+  inp.step = 1;
+  attachTip(inp, title);
+  inp.addEventListener("change", () => {
+    let v = Math.round(+inp.value);
+    if (!Number.isFinite(v)) v = 100;
+    v = Math.max(0, Math.min(100, v));
+    inp.value = v;
+    onChange(v / 100);
+  });
+  wrap.append(inp, document.createTextNode("%"));
+  return { wrap, inp };
+}
+
+const fillAlphaOpts = {
+  get: () => fig.config.fillAlpha,
+  set: (a) => {
+    patch({ fillAlpha: a });
+    fillPct.inp.value = Math.round(a * 100);
+  },
+};
+const strokeAlphaOpts = {
+  get: () => fig.config.strokeAlpha,
+  set: (a) => {
+    patch({ strokeAlpha: a });
+    strokePct.inp.value = Math.round(a * 100);
+  },
+};
+
+const fillSub = el("div", "sub");
+fillSub.textContent = "FILL";
+attachTip(fillSub, "Fill color and opacity. Add stops (up to 6) to turn the fill into a gradient that flows across the figure.");
+controls.append(fillSub);
+const fillWrap = el("div");
+controls.append(fillWrap);
+const fillPct = mkPct(INFO.fillAlpha[1], (v) => patch({ fillAlpha: v }));
+const addStopBtn = el("button", "mini");
+addStopBtn.type = "button";
+addStopBtn.textContent = "+ ADD COLOR";
+addStopBtn.onclick = () => {
+  if (stops.length >= MAX_STOPS) return;
+  stops.push(stops[stops.length - 1]);
+  commitStops(true);
+};
+controls.append(addStopBtn);
+
+const strokeSub = el("div", "sub");
+strokeSub.textContent = "STROKE";
+controls.append(strokeSub);
+const strokePct = mkPct(INFO.strokeAlpha[1], (v) => patch({ strokeAlpha: v }));
+const strokeWrap = el("div", "colorrow");
+const strokePair = colorPair(DEFAULTS.colors.stroke, (v) => patch({ colors: { stroke: v } }), strokeAlphaOpts);
+strokeWrap.append(strokePair.swatch, strokePair.hex, strokePct.wrap, el("span"));
+controls.append(strokeWrap);
+
+const bgSub = el("div", "sub");
+bgSub.textContent = "BACKGROUND";
+controls.append(bgSub);
+const bgWrap = el("div", "colorrow");
+let lastBg = "#F6F5F1";
+const bgPair = colorPair(lastBg, (v) => {
+  lastBg = v;
+  if (!bgTransBox.checked) patch({ colors: { bg: v } });
+});
+bgWrap.append(bgPair.swatch, bgPair.hex, el("span"), el("span"));
+controls.append(bgWrap);
+const bgCheck = el("label", "check");
+const bgTransBox = el("input");
+bgTransBox.type = "checkbox";
+bgCheck.append(bgTransBox, document.createTextNode("transparent (the page shows through)"));
+controls.append(bgCheck);
+bgTransBox.onchange = () => {
+  bgWrap.classList.toggle("off", bgTransBox.checked);
+  patch({ colors: { bg: bgTransBox.checked ? "transparent" : lastBg } });
+};
+
+let stops = [DEFAULTS.colors.fill];
+function commitStops(rebuild) {
+  const colors = stops.length > 1
+    ? { fill: stops[0], ramp: [...stops] }
+    : { fill: stops[0], ramp: null };
+  patch({ colors });
+  if (rebuild) renderStops();
+}
+function renderStops() {
+  fillWrap.innerHTML = "";
+  stops.forEach((c, idx) => {
+    const row = el("div", "colorrow");
+    const pair = colorPair(c, (v) => {
+      stops[idx] = v;
+      commitStops(false);
+    }, fillAlphaOpts);
+    row.append(pair.swatch, pair.hex);
+    row.append(idx === 0 ? fillPct.wrap : el("span"));
+    if (stops.length > 1) {
+      const del = el("button", "del");
+      del.type = "button";
+      del.textContent = "✕";
+      del.onclick = () => {
+        stops.splice(idx, 1);
+        commitStops(true);
+      };
+      row.append(del);
+    } else {
+      row.append(el("span"));
+    }
+    fillWrap.append(row);
+  });
+  addStopBtn.style.display = stops.length >= MAX_STOPS ? "none" : "";
+}
+
+// -------------------------------------------------------------- render state
+function renderControls(cfg) {
+  for (const [key, { inp, out, from }] of Object.entries(inputs)) {
+    inp.value = from(cfg[key]);
+    out.value = fmt(cfg[key]);
+  }
+  setSym(cfg.mirror);
+  blendSel.value = cfg.blend;
+  fillPct.inp.value = Math.round(cfg.fillAlpha * 100);
+  strokePct.inp.value = Math.round(cfg.strokeAlpha * 100);
+
+  stops = cfg.colors.ramp && cfg.colors.ramp.length > 1
+    ? [...cfg.colors.ramp]
+    : [cfg.colors.fill];
+  renderStops();
+  strokePair.set(cfg.colors.stroke);
+  const transparent = !cfg.colors.bg || cfg.colors.bg === "transparent";
+  bgTransBox.checked = transparent;
+  bgWrap.classList.toggle("off", transparent);
+  if (!transparent) {
+    lastBg = cfg.colors.bg;
+    bgPair.set(cfg.colors.bg);
+  }
+}
+
+// ------------------------------------------------------------------ URL hash
+function exportable(cfg) {
+  const { fps, interact, ...rest } = cfg;
+  const out = { ...rest, colors: { ...cfg.colors } };
+  for (const k of Object.keys(out)) {
+    if (typeof out[k] === "number") out[k] = Math.round(out[k] * 1000) / 1000;
+  }
+  if (!out.colors.ramp) delete out.colors.ramp;
+  if (!out.path) delete out.path;
+  return out;
+}
+
+let hashTimer = 0;
+function scheduleHash() {
+  clearTimeout(hashTimer);
+  hashTimer = setTimeout(() => {
+    history.replaceState(null, "", "#" + encodeURIComponent(JSON.stringify(exportable(fig.config))));
+  }, 200);
+}
+
+function readHash() {
+  if (location.hash.length < 2) return null;
+  try {
+    return JSON.parse(decodeURIComponent(location.hash.slice(1)));
+  } catch {
+    return null;
+  }
+}
+
+// -------------------------------------------------------------- undo / redo
+let past = [];
+let future = [];
+let restoring = false;
+let snapTimer = 0;
+
+function snapshotNow() {
+  if (restoring) return;
+  const json = JSON.stringify(exportable(fig.config));
+  if (past[past.length - 1] === json) return;
+  past.push(json);
+  if (past.length > 120) past.shift();
+  future = [];
+}
+function scheduleSnapshot() {
+  clearTimeout(snapTimer);
+  snapTimer = setTimeout(snapshotNow, 450);
+}
+function undo() {
+  clearTimeout(snapTimer);
+  snapshotNow();
+  if (past.length < 2) {
+    toast("nothing to undo");
+    return;
+  }
+  future.push(past.pop());
+  restoreState(past[past.length - 1]);
+}
+function redo() {
+  if (!future.length) {
+    toast("nothing to redo");
+    return;
+  }
+  const json = future.pop();
+  past.push(json);
+  restoreState(json);
+}
+function restoreState(json) {
+  restoring = true;
+  applyConfig(mergeConfig(DEFAULTS, JSON.parse(json)));
+  restoring = false;
+}
+
+// ------------------------------------------------------------------- actions
+let stripsTimer = 0;
+function patch(p) {
+  fig.set(p);
+  scheduleHash();
+  scheduleSnapshot();
+  clearTimeout(stripsTimer);
+  stripsTimer = setTimeout(updateStrips, 150);
+}
+
+function applyConfig(cfg) {
+  fig.set(cfg);
+  renderControls(fig.config);
+  scheduleHash();
+  updateStrips();
+  snapshotNow();
+}
+
+function randomize() {
+  const rc = randomConfig();
+  const cur = fig.config;
+  // randomize composition; keep palette, ink style, framing and svg path
+  rc.colors = cur.colors;
+  for (const k of ["fillAlpha", "strokeAlpha", "blend", "trail", "lineWidth",
+                   "zoom", "offsetX", "offsetY", "rotate", "path"]) rc[k] = cur[k];
+  applyConfig(rc);
+}
+
+function reset() {
+  const cur = fig.config;
+  const d = mergeConfig(DEFAULTS, {});
+  d.colors = cur.colors;
+  d.path = cur.path;
+  applyConfig(d);
+}
+
+function toast(msg) {
+  const t = $("#toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toast.timer);
+  toast.timer = setTimeout(() => t.classList.remove("show"), 1600);
+}
+
+async function copyText(text, label) {
+  try {
+    await navigator.clipboard.writeText(text);
+    toast(label + " copied");
+  } catch {
+    toast("clipboard unavailable");
+  }
+}
+
+$("#btn-undo").onclick = undo;
+$("#btn-redo").onclick = redo;
+$("#btn-random").onclick = randomize;
+$("#btn-reset").onclick = reset;
+$("#btn-copy").onclick = () =>
+  copyText(JSON.stringify(exportable(fig.config), null, 2), "config");
+$("#btn-embed").onclick = () => {
+  const json = JSON.stringify(exportable(fig.config));
+  const snippet =
+    `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
+    `<vaiven-figure style="max-width:480px" config='${json}'></vaiven-figure>`;
+  copyText(snippet, "embed snippet");
+};
+
+addEventListener("keydown", (e) => {
+  if (e.key === "Escape" && pk.open) {
+    closePicker();
+    return;
+  }
+  const t = e.target;
+  const typing = t && (t.tagName === "TEXTAREA" ||
+    (t.tagName === "INPUT" && /^(text|number)$/.test(t.type)));
+  const mod = e.metaKey || e.ctrlKey;
+  if (mod && !typing && e.key.toLowerCase() === "z") {
+    e.preventDefault();
+    if (e.shiftKey) redo();
+    else undo();
+    return;
+  }
+  if (mod && !typing && e.key.toLowerCase() === "y") {
+    e.preventDefault();
+    redo();
+    return;
+  }
+  if (mod || e.altKey) return;
+  if (t && /^(INPUT|SELECT|TEXTAREA)$/.test(t.tagName)) return;
+  if (e.key === "r" || e.key === "R") randomize();
+  else if (e.key === "0") reset();
+});
+
+addEventListener("hashchange", () => {
+  const c = readHash();
+  if (c) applyConfig(mergeConfig(DEFAULTS, c));
+});
+
+// ------------------------------------------------------- pattern/shape strips
+const patternCards = []; // { layout, h, card }
+const shapeCards = [];   // { shape, h, card }
+let customCard = null;
+
+function makeCard(wrap, tagText) {
+  const card = el("button", "card");
+  card.type = "button";
+  const thumb = el("span", "thumb");
+  const cv = el("canvas");
+  thumb.append(cv);
+  const tag = el("span", "tag");
+  tag.textContent = tagText;
+  card.append(thumb, tag);
+  wrap.append(card);
+  const h = createFigure(cv, { fps: 20 });
+  return { card, h };
+}
+
+const patternsWrap = $("#patterns");
+for (const layout of LAYOUTS) {
+  const { card, h } = makeCard(patternsWrap, layout);
+  card.addEventListener("click", () => {
+    patch({ layout });
+    markSelection();
+  });
+  patternCards.push({ layout, h, card });
+}
+
+const shapesWrap = $("#shapes");
+for (const shape of SHAPES) {
+  if (shape === "custom") continue;
+  const { card, h } = makeCard(shapesWrap, shape);
+  card.addEventListener("click", () => {
+    patch({ shape });
+    markSelection();
+  });
+  shapeCards.push({ shape, h, card });
+}
+{
+  const { card, h } = makeCard(shapesWrap, "custom");
+  card.style.display = "none";
+  card.addEventListener("click", () => {
+    patch({ shape: "custom" });
+    markSelection();
+  });
+  customCard = { shape: "custom", h, card };
+  shapeCards.push(customCard);
+}
+const uploadCard = el("button", "card upload");
+uploadCard.type = "button";
+const uploadThumb = el("span", "thumb");
+uploadThumb.textContent = "+ SVG";
+const uploadTag = el("span", "tag");
+uploadTag.textContent = "your shape";
+uploadCard.append(uploadThumb, uploadTag);
+attachTip(uploadCard, "Use a shape from an SVG file. Single-path icons work best; transforms inside the file are ignored.");
+shapesWrap.append(uploadCard);
+const svgInput = $("#svg-file");
+uploadCard.onclick = () => svgInput.click();
+svgInput.onchange = async () => {
+  const file = svgInput.files && svgInput.files[0];
+  svgInput.value = "";
+  if (!file) return;
+  try {
+    const text = await file.text();
+    const doc = new DOMParser().parseFromString(text, "image/svg+xml");
+    const ds = [...doc.querySelectorAll("path")].map((p) => p.getAttribute("d")).filter(Boolean);
+    const polys = [...doc.querySelectorAll("polygon, polyline")]
+      .map((p) => {
+        const pts = p.getAttribute("points");
+        return pts ? "M" + pts + (p.tagName.toLowerCase() === "polygon" ? "Z" : "") : null;
+      })
+      .filter(Boolean);
+    const d = [...ds, ...polys].join(" ");
+    if (!d) {
+      toast("no <path> found in that SVG");
+      return;
+    }
+    patch({ shape: "custom", path: d });
+    renderControls(fig.config);
+    updateStrips();
+    toast("custom shape loaded");
+  } catch {
+    toast("couldn't read that SVG");
+  }
+};
+
+function markSelection() {
+  const cfg = fig.config;
+  for (const { layout, card } of patternCards) card.classList.toggle("sel", layout === cfg.layout);
+  for (const { shape, card } of shapeCards) card.classList.toggle("sel", shape === cfg.shape);
+}
+
+function updateStrips() {
+  const base = fig.config;
+  for (const { layout, h } of patternCards) h.set({ ...base, layout, fps: 20 });
+  for (const { shape, h, card } of shapeCards) {
+    if (shape === "custom") {
+      card.style.display = base.path ? "" : "none";
+      if (base.path) h.set({ ...base, shape: "custom", fps: 20 });
+      continue;
+    }
+    h.set({ ...base, shape, fps: 20 });
+  }
+  markSelection();
+}
+
+// ----------------------------------------------------------------------- init
+function init() {
+  const initial = readHash() || FALLBACK;
+  applyConfig(mergeConfig(DEFAULTS, initial));
+}
+init();
+</script>
+</body>
+</html>
