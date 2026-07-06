@@ -98,10 +98,14 @@
   .card.upload:hover .thumb { color: var(--ink); }
 
   .sidebar {
-    overflow-y: auto; margin: 16px 16px 18px 0;
-    border: 1px solid var(--line); border-radius: 8px;
-    padding: 16px 18px 40px; background: var(--panel);
+    display: flex; flex-direction: column; min-height: 0; overflow: hidden;
+    margin: 16px 16px 18px 0;
+    border: 1px solid var(--line); border-radius: 8px; background: var(--panel);
     box-shadow: 0 1px 2px rgba(30,30,30,.04), 0 12px 32px rgba(30,30,30,.06);
+  }
+  .sidebar-scroll {
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 16px 18px 40px;
   }
   .sidebar h2 {
     font: 600 11px var(--mono); letter-spacing: .14em;
@@ -291,7 +295,7 @@
       </div>
     </div>
   </div>
-  <div class="sidebar" id="controls"></div>
+  <div class="sidebar"><div class="sidebar-scroll" id="controls"></div></div>
 </div>
 
 <footer>R random · 0 reset · ⌘Z undo · ⇧⌘Z redo · the config lives in the URL hash — share it</footer>
