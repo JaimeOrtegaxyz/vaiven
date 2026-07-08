@@ -309,8 +309,11 @@ export function createFigure(canvas, config = {}) {
       strokeA = 1; // never draw nothing
       effLW = Math.max(effLW, 0.35);
     }
-    // divide by zoom so stroke width stays visually constant while zooming
-    ctx.lineWidth = effLW / zoom;
+    // lineWidth is in 340-reference px: scale by `unit` so the stroke-to-shape
+    // ratio is identical at ANY canvas size (WYSIWYG — a config looks the same
+    // in the playground and in a smaller site slot). /zoom keeps the stroke
+    // visually constant under camera zoom.
+    ctx.lineWidth = (effLW * unit) / zoom;
 
     const m = cfg.mirror;
     const passes = [[1, 1]];
@@ -396,7 +399,8 @@ export function createFigure(canvas, config = {}) {
         if (customPath) {
           const s = (rx + ry) / 2;
           ctx.scale(rx, ry);
-          ctx.lineWidth = effLW / (zoom * Math.max(0.0001, s));
+          // *unit to match the WYSIWYG stroke scaling used for built-in shapes
+          ctx.lineWidth = (effLW * unit) / (zoom * Math.max(0.0001, s));
           if (fillA > 0) {
             ctx.globalAlpha = fillA;
             ctx.fill(customPath);
