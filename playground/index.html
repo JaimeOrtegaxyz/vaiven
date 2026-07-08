@@ -98,6 +98,36 @@
   }
   .card.upload { border-style: dashed; }
   .card.upload:hover .thumb { color: var(--ink); }
+  .menu-wrap { position: relative; }
+  .menu {
+    position: absolute; right: 0; top: calc(100% + 6px); z-index: 20;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    box-shadow: 0 1px 2px rgba(30,30,30,.05), 0 12px 32px rgba(30,30,30,.10);
+    padding: 4px; min-width: 184px; display: flex; flex-direction: column;
+  }
+  .menu[hidden] { display: none; }
+  .menu button {
+    font: 12px var(--mono); letter-spacing: .04em; text-align: left;
+    background: transparent; color: var(--ink); border: 0; border-radius: 4px;
+    padding: 9px 10px; cursor: pointer;
+  }
+  .menu button:hover { background: rgba(30,30,30,.06); }
+  .menu button:disabled { color: var(--faint); cursor: default; background: transparent; }
+  .card.upload .name-input {
+    font: 11px var(--mono); text-align: center; width: 84%; padding: 2px 0;
+    border: 0; border-bottom: 1px solid var(--ink); background: transparent;
+    color: var(--ink); outline: none;
+  }
+  .cards.drop { outline: 1px dashed var(--faint); outline-offset: 4px; border-radius: 4px; }
+  .card .del {
+    position: absolute; top: 4px; right: 4px; width: 18px; height: 18px;
+    display: none; align-items: center; justify-content: center;
+    background: var(--paper); color: var(--faint);
+    border: 1px solid var(--line); border-radius: 3px;
+    font-size: 12px; line-height: 1; cursor: pointer; z-index: 2;
+  }
+  .card:hover .del { display: flex; }
+  .card .del:hover { color: var(--ink); border-color: var(--ink); }
 
   .sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
@@ -278,8 +308,14 @@
     <button class="ui" id="btn-random">RANDOM [R]</button>
     <button class="ui" id="btn-reset">RESET [0]</button>
     <span class="sep"></span>
-    <button class="ui" id="btn-copy">COPY CONFIG</button>
-    <button class="ui" id="btn-embed">COPY EMBED</button>
+    <div class="menu-wrap">
+      <button class="ui" id="btn-copy" aria-haspopup="true">COPY ▾</button>
+      <div class="menu" id="copy-menu" hidden>
+        <button type="button" data-copy="config">Config JSON</button>
+        <button type="button" data-copy="embed">Embed snippet</button>
+        <button type="button" data-copy="shelf">Shelf · presets.json</button>
+      </div>
+    </div>
   </div>
 </header>
 
@@ -294,6 +330,10 @@
       <div class="strip">
         <h2>SHAPE</h2>
         <div class="cards" id="shapes"></div>
+      </div>
+      <div class="strip">
+        <h2>SHELF</h2>
+        <div class="cards" id="shelf"></div>
       </div>
     </div>
   </div>
@@ -1001,15 +1041,29 @@ $("#btn-undo").onclick = undo;
 $("#btn-redo").onclick = redo;
 $("#btn-random").onclick = randomize;
 $("#btn-reset").onclick = reset;
-$("#btn-copy").onclick = () =>
-  copyText(JSON.stringify(exportable(fig.config), null, 2), "config");
-$("#btn-embed").onclick = () => {
+// One COPY ▾ menu for every "get something out" action, so nothing competes.
+const embedSnippet = () => {
   const json = JSON.stringify(exportable(fig.config));
-  const snippet =
-    `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
+  return `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
     `<vaiven-figure style="max-width:480px" config='${json}'></vaiven-figure>`;
-  copyText(snippet, "embed snippet");
 };
+const copyMenu = $("#copy-menu");
+const closeCopyMenu = () => { copyMenu.hidden = true; };
+$("#btn-copy").onclick = (e) => {
+  e.stopPropagation();
+  copyMenu.querySelector('[data-copy="shelf"]').disabled = shelfCount() === 0;
+  copyMenu.hidden = !copyMenu.hidden;
+};
+copyMenu.onclick = (e) => {
+  const act = e.target.dataset && e.target.dataset.copy;
+  if (!act) return;
+  if (act === "config") copyText(JSON.stringify(exportable(fig.config), null, 2), "config");
+  else if (act === "embed") copyText(embedSnippet(), "embed snippet");
+  else if (act === "shelf") copyText(JSON.stringify(loadShelf(), null, 2), "shelf → vaiven.presets.json");
+  closeCopyMenu();
+};
+addEventListener("click", (e) => { if (!e.target.closest(".menu-wrap")) closeCopyMenu(); });
+addEventListener("keydown", (e) => { if (e.key === "Escape") closeCopyMenu(); });
 
 addEventListener("keydown", (e) => {
   if (e.key === "Escape" && pk.open) {
@@ -1149,6 +1203,106 @@ function updateStrips() {
   }
   markSelection();
 }
+
+// ------------------------------------------------------------------- shelf
+// Per-session preset shelf: sessionStorage, so a new tab/window opens empty
+// but a reload doesn't wipe it. Save with inline naming; load by clicking;
+// remove on hover. Export via COPY ▾ · Shelf; import by dropping a
+// vaiven.presets.json onto the row. The project file is the durable store —
+// the shipped site still gets inlined configs.
+const SHELF_KEY = "vaiven.shelf";
+const shelfWrap = $("#shelf");
+const shelfCards = [];
+try { localStorage.removeItem(SHELF_KEY); } catch {} // retire any old persisted shelf
+
+const loadShelf = () => {
+  try { return JSON.parse(sessionStorage.getItem(SHELF_KEY)) || {}; }
+  catch { return {}; }
+};
+const saveShelf = (obj) => sessionStorage.setItem(SHELF_KEY, JSON.stringify(obj));
+const shelfCount = () => Object.keys(loadShelf()).length;
+
+function addToShelf(name, cfg) {
+  name = (name || "").trim();
+  if (!name) return false;
+  const s = loadShelf();
+  s[name] = cfg;
+  saveShelf(s);
+  renderShelf();
+  toast("saved “" + name + "”");
+  return true;
+}
+
+function renderShelf() {
+  for (const { h } of shelfCards) h.destroy();
+  shelfCards.length = 0;
+  shelfWrap.innerHTML = "";
+
+  // "+ save" card with in-product inline naming (no browser prompt)
+  const add = el("button", "card upload");
+  add.type = "button";
+  const thumb = el("span", "thumb");
+  thumb.textContent = "+ save";
+  const atag = el("span", "tag");
+  atag.textContent = "current look";
+  add.append(thumb, atag);
+  add.onclick = () => {
+    if (thumb.querySelector("input")) return;
+    // The hint lives in the tag, not a placeholder — a centered empty input
+    // would blink its caret right on top of centered placeholder text.
+    thumb.textContent = "";
+    atag.textContent = "name it ↵";
+    const inp = el("input", "name-input");
+    thumb.append(inp);
+    inp.focus();
+    const reset = () => { thumb.textContent = "+ save"; atag.textContent = "current look"; };
+    inp.onkeydown = (e) => {
+      if (e.key === "Enter") addToShelf(inp.value, exportable(fig.config));
+      else if (e.key === "Escape") reset();
+    };
+    inp.onblur = () => { if (thumb.contains(inp)) reset(); };
+  };
+  shelfWrap.append(add);
+
+  for (const [name, cfg] of Object.entries(loadShelf())) {
+    const { card, h } = makeCard(shelfWrap, name);
+    h.set({ ...mergeConfig(DEFAULTS, cfg), fps: 20 });
+    card.addEventListener("click", () => {
+      applyConfig(mergeConfig(DEFAULTS, cfg));
+      toast("loaded “" + name + "”");
+    });
+    const del = el("span", "del");
+    del.textContent = "×";
+    del.title = "remove";
+    del.onclick = (e) => {
+      e.stopPropagation();
+      const s = loadShelf();
+      delete s[name];
+      saveShelf(s);
+      renderShelf();
+    };
+    card.append(del);
+    shelfCards.push({ name, h, card });
+  }
+}
+
+// Import: drop a vaiven.presets.json onto the row.
+shelfWrap.addEventListener("dragover", (e) => { e.preventDefault(); shelfWrap.classList.add("drop"); });
+shelfWrap.addEventListener("dragleave", () => shelfWrap.classList.remove("drop"));
+shelfWrap.addEventListener("drop", async (e) => {
+  e.preventDefault();
+  shelfWrap.classList.remove("drop");
+  const file = e.dataTransfer.files && e.dataTransfer.files[0];
+  if (!file) return;
+  try {
+    const obj = JSON.parse(await file.text());
+    saveShelf({ ...loadShelf(), ...obj });
+    renderShelf();
+    toast("imported " + Object.keys(obj).length + " look(s)");
+  } catch { toast("couldn't read that presets file"); }
+});
+
+renderShelf();
 
 // ----------------------------------------------------------------------- init
 function init() {
