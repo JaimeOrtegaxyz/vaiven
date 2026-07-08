@@ -1,6 +1,6 @@
-# Vaivén
+# Vaiven
 
-*vaivén (Spanish): a perpetual to-and-fro; the swing of things.*
+*vaiven (Spanish): a perpetual to-and-fro; the swing of things.*
 
 **What**: A zero-dependency generative-figure system for the web — a Canvas 2D
 engine where every animation is a JSON config, a `<vaiven-figure>` web

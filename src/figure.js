@@ -1,5 +1,5 @@
 /**
- * Vaivén — a config-driven Canvas 2D instrument for generative figures.
+ * Vaiven — a config-driven Canvas 2D instrument for generative figures.
  *
  * Every animation is one JSON config: N simple shapes whose position, size
  * and rotation are parametric functions of (index, time). Calm perpetual

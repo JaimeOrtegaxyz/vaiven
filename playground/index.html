@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Vaivén — Playground</title>
+<title>Vaiven — Playground</title>
 <style>
   @font-face {
     font-family: "IBM Plex Mono"; font-style: normal; font-weight: 400; font-display: swap;
@@ -39,6 +39,8 @@
     padding: 12px 20px; border-bottom: 1px solid var(--line); flex-wrap: wrap;
   }
   header h1 { font: 600 13px var(--mono); letter-spacing: 0.14em; margin: 0; }
+  header h1.brand { display: inline-flex; align-items: center; line-height: 0; }
+  header h1.brand img { height: 16px; width: auto; display: block; }
   .btns { display: flex; gap: 8px; flex-wrap: wrap; }
   button.ui {
     font: 12px var(--mono); letter-spacing: 0.06em;
@@ -268,7 +270,7 @@
 </head>
 <body>
 <header>
-  <h1>VAIVÉN</h1>
+  <h1 class="brand"><img src="../assets/vaiven-logo.svg" alt="Vaiven"></h1>
   <div class="btns">
     <button class="ui" id="btn-undo" title="⌘Z">UNDO</button>
     <button class="ui" id="btn-redo" title="⇧⌘Z">REDO</button>

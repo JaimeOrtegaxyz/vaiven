@@ -1,5 +1,5 @@
 /**
- * <vaiven-figure> — web component wrapper around the Vaivén engine.
+ * <vaiven-figure> — web component wrapper around the Vaiven engine.
  *
  * Usage:
  *   <script type="module" src=".../figure-element.js"></script>

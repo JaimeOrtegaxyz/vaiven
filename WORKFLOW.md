@@ -1,4 +1,4 @@
-# Vaivén — Workflow (proto-skill)
+# Vaiven — Workflow (proto-skill)
 
 Produces generative canvas figures for web projects: calm, perpetually looping
 abstractions built from many simple primitives, in several ink styles — etched

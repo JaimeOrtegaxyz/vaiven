@@ -1,6 +1,6 @@
-# Vaivén
+# Vaiven
 
-*vaivén — Spanish for the swing of things: a perpetual to-and-fro.*
+*vaiven — Spanish for the swing of things: a perpetual to-and-fro.*
 
 Calm, endlessly looping generative figures for the web. One zero-dependency
 Canvas 2D engine (two plain ES modules, ~15KB) where **every animation is a
