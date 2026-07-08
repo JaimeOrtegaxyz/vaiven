@@ -74,6 +74,16 @@
     font: 600 11px var(--mono); letter-spacing: .14em;
     color: var(--faint); margin: 0 0 8px;
   }
+  .strip-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin: 0 0 8px; }
+  .strip-head h2 { margin: 0; }
+  .link-btn {
+    font: 600 10px var(--mono); letter-spacing: .1em; text-transform: uppercase;
+    color: var(--faint); background: transparent; border: 0; cursor: pointer;
+    padding: 1px 3px; border-radius: 3px; white-space: nowrap;
+    transition: color .15s cubic-bezier(0.2,0,0,1);
+  }
+  .link-btn:hover { color: var(--ink); }
+  .link-btn.linked, .link-btn.attn { color: var(--ink); }
   .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 8px; }
   .card {
     position: relative; display: flex; flex-direction: column; text-align: left;
@@ -128,6 +138,40 @@
   }
   .card:hover .del { display: flex; }
   .card .del:hover { color: var(--ink); border-color: var(--ink); }
+  .card .rep {
+    position: absolute; top: 4px; right: 26px; width: 18px; height: 18px;
+    display: none; align-items: center; justify-content: center;
+    background: var(--paper); color: var(--faint);
+    border: 1px solid var(--line); border-radius: 3px;
+    font-size: 12px; line-height: 1; cursor: pointer; z-index: 2;
+    transition: color .15s cubic-bezier(0.2,0,0,1), border-color .15s cubic-bezier(0.2,0,0,1), transform .1s cubic-bezier(0.2,0,0,1);
+  }
+  .card:hover .rep { display: flex; }
+  .card .rep:hover { color: var(--ink); border-color: var(--ink); }
+  .card .rep:active { transform: scale(0.92); }
+  /* in-preview overwrite confirm — sits over the running figure (the look that
+     will replace the saved one), so the choice reads in context. */
+  .frame .confirm {
+    position: absolute; left: 50%; bottom: 14px; transform: translateX(-50%);
+    z-index: 5; display: flex; align-items: center; gap: 8px; white-space: nowrap;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 8px;
+    padding: 7px 8px 7px 13px;
+    box-shadow: 0 1px 2px rgba(30,30,30,.05), 0 12px 32px rgba(30,30,30,.12);
+    font: 11px var(--mono); color: var(--ink); letter-spacing: .02em;
+    animation: confirm-in .14s cubic-bezier(0.2,0,0,1);
+  }
+  .frame .confirm .lbl { color: var(--faint); }
+  .frame .confirm .lbl b { color: var(--ink); font-weight: 600; }
+  .frame .confirm button {
+    font: 11px var(--mono); letter-spacing: .06em; cursor: pointer;
+    border: 1px solid var(--line); border-radius: 3px; padding: 4px 9px;
+    background: var(--paper); color: var(--ink);
+    transition: border-color .15s cubic-bezier(0.2,0,0,1), background-color .15s cubic-bezier(0.2,0,0,1), transform .1s cubic-bezier(0.2,0,0,1);
+  }
+  .frame .confirm button:hover { border-color: var(--ink); }
+  .frame .confirm button:active { transform: scale(0.96); }
+  .frame .confirm button.go { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  @keyframes confirm-in { from { opacity: 0; transform: translateX(-50%) translateY(4px); } }
 
   .sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
@@ -332,7 +376,7 @@
         <div class="cards" id="shapes"></div>
       </div>
       <div class="strip">
-        <h2>SHELF</h2>
+        <div class="strip-head"><h2>SHELF</h2><button type="button" id="shelf-link" class="link-btn" hidden></button></div>
         <div class="cards" id="shelf"></div>
       </div>
     </div>
@@ -1219,7 +1263,11 @@ const loadShelf = () => {
   try { return JSON.parse(sessionStorage.getItem(SHELF_KEY)) || {}; }
   catch { return {}; }
 };
-const saveShelf = (obj) => sessionStorage.setItem(SHELF_KEY, JSON.stringify(obj));
+const writeSession = (obj) => sessionStorage.setItem(SHELF_KEY, JSON.stringify(obj));
+// project-file binding (set up below). When linked, every write mirrors to the
+// project's vaiven.presets.json; unlinked, the shelf is session-only as before.
+let fileHandle = null, lastFileText = null, fileWriteChain = Promise.resolve();
+const saveShelf = (obj) => { writeSession(obj); if (fileHandle) queueFileWrite(obj); };
 const shelfCount = () => Object.keys(loadShelf()).length;
 
 function addToShelf(name, cfg) {
@@ -1231,6 +1279,46 @@ function addToShelf(name, cfg) {
   renderShelf();
   toast("saved “" + name + "”");
   return true;
+}
+
+// Overwrite-save: a per-card "replace" arms a confirm rendered over the preview
+// — the running figure IS the look that will replace the saved one, so the
+// choice reads in context. Escape / CANCEL / a click outside dismisses it.
+let confirmEl = null;
+function dismissReplace() {
+  if (!confirmEl) return;
+  confirmEl.remove();
+  confirmEl = null;
+  document.removeEventListener("keydown", onConfirmKey);
+  document.removeEventListener("mousedown", onConfirmAway, true);
+}
+function onConfirmKey(e) { if (e.key === "Escape") { e.preventDefault(); dismissReplace(); } }
+function onConfirmAway(e) { if (confirmEl && !confirmEl.contains(e.target)) dismissReplace(); }
+function armReplace(name) {
+  dismissReplace();
+  confirmEl = el("div", "confirm");
+  const lbl = el("span", "lbl");
+  lbl.append("replace “", Object.assign(el("b"), { textContent: name }), "”?");
+  const go = el("button", "go");
+  go.type = "button";
+  go.textContent = "REPLACE";
+  go.onclick = () => {
+    const s = loadShelf();
+    s[name] = exportable(fig.config);
+    saveShelf(s);
+    renderShelf();
+    toast("replaced “" + name + "”");
+    dismissReplace();
+  };
+  const no = el("button");
+  no.type = "button";
+  no.textContent = "CANCEL";
+  no.onclick = dismissReplace;
+  confirmEl.append(lbl, go, no);
+  $(".frame").append(confirmEl);
+  document.addEventListener("keydown", onConfirmKey);
+  // defer, so the click that armed this doesn't immediately count as "outside"
+  setTimeout(() => document.addEventListener("mousedown", onConfirmAway, true), 0);
 }
 
 function renderShelf() {
@@ -1282,6 +1370,11 @@ function renderShelf() {
       renderShelf();
     };
     card.append(del);
+    const rep = el("span", "rep");
+    rep.textContent = "⤓";
+    rep.title = "replace with current look";
+    rep.onclick = (e) => { e.stopPropagation(); armReplace(name); };
+    card.append(rep);
     shelfCards.push({ name, h, card });
   }
 }
@@ -1302,7 +1395,171 @@ shelfWrap.addEventListener("drop", async (e) => {
   } catch { toast("couldn't read that presets file"); }
 });
 
+// ---- durable, project-bound shelf: File System Access API ------------------
+// Linked → every shelf write mirrors to the project's vaiven.presets.json and a
+// reopen reconnects to it; unlinked → session-only (COPY ▾ · Shelf and
+// drag-import stay the manual path). Chromium-only; elsewhere the control hides.
+const linkBtn = $("#shelf-link");
+const FS_OK = typeof window.showSaveFilePicker === "function";
+
+// One request per transaction, issued synchronously inside onsuccess (never
+// await between opening the tx and issuing the request — that can leave the
+// transaction inactive).
+function idbReq(mode, fn) {
+  return new Promise((res, rej) => {
+    const open = indexedDB.open("vaiven-playground", 1);
+    open.onupgradeneeded = () => open.result.createObjectStore("kv");
+    open.onerror = () => rej(open.error);
+    open.onsuccess = () => {
+      try {
+        const store = open.result.transaction("kv", mode).objectStore("kv");
+        const req = fn(store);
+        req.onsuccess = () => res(req.result);
+        req.onerror = () => rej(req.error);
+      } catch (e) { rej(e); }
+    };
+  });
+}
+const idbGet = (k) => idbReq("readonly", (s) => s.get(k));
+const idbSet = (k, v) => idbReq("readwrite", (s) => s.put(v, k));
+const idbDel = (k) => idbReq("readwrite", (s) => s.delete(k));
+
+function refreshLinkUI() {
+  if (!linkBtn) return;
+  linkBtn.hidden = !FS_OK;
+  if (fileHandle) {
+    linkBtn.textContent = "◆ " + fileHandle.name;
+    linkBtn.title = "click to unlink (this session stays)";
+    linkBtn.classList.add("linked"); linkBtn.classList.remove("attn");
+  } else {
+    linkBtn.textContent = "◇ link file";
+    linkBtn.title = "bind the shelf to a project vaiven.presets.json";
+    linkBtn.classList.remove("linked", "attn");
+  }
+}
+
+const readHandleText = (h) => h.getFile().then((f) => f.text());
+
+async function writeFileNow(obj) {
+  if (!fileHandle) return;
+  const text = JSON.stringify(obj, null, 2) + "\n";
+  try {
+    // stale guard: if the file changed on disk since we last synced, warn
+    if (lastFileText !== null) {
+      const disk = await readHandleText(fileHandle).catch(() => null);
+      if (disk !== null && disk !== lastFileText && disk !== text) {
+        toast("⚠ vaiven.presets.json changed on disk — overwriting");
+      }
+    }
+    const w = await fileHandle.createWritable();
+    await w.write(text);
+    await w.close();
+    lastFileText = text;
+  } catch (err) {
+    console.warn("shelf file write failed:", err);
+    fileHandle = null; lastFileText = null;
+    idbDel("handle").catch(() => {});
+    refreshLinkUI();
+    toast("lost the shelf file — now session-only");
+  }
+}
+function queueFileWrite(obj) { fileWriteChain = fileWriteChain.then(() => writeFileNow(obj)); }
+
+async function bindHandle(handle) {
+  fileHandle = handle;
+  let fileObj = {};
+  try {
+    const text = await readHandleText(handle);
+    lastFileText = text;
+    fileObj = text.trim() ? JSON.parse(text) : {};
+  } catch (err) { console.warn("couldn't read shelf file:", err); lastFileText = null; }
+  // union the file with the current session (session wins a name clash), so
+  // linking never drops either side; then write the union back as canonical.
+  const merged = { ...fileObj, ...loadShelf() };
+  writeSession(merged);
+  renderShelf();
+  await writeFileNow(merged);
+  refreshLinkUI();
+}
+
+async function linkFile() {
+  if (fileHandle) { // linked → unlink (session persists)
+    fileHandle = null; lastFileText = null;
+    idbDel("handle").catch(() => {});
+    refreshLinkUI();
+    toast("unlinked — shelf is session-only");
+    return;
+  }
+  if (!FS_OK) { toast("file linking needs Chrome or Edge"); return; }
+  try {
+    const handle = await window.showSaveFilePicker({
+      suggestedName: "vaiven.presets.json",
+      types: [{ description: "Vaiven shelf", accept: { "application/json": [".json"] } }],
+    });
+    await bindHandle(handle);
+    await idbSet("handle", handle).catch(() => {});
+    toast("linked ◆ " + handle.name);
+  } catch (err) {
+    if (err && err.name !== "AbortError") { console.warn(err); toast("couldn't link file"); }
+  }
+}
+
+async function reconnectShelfFile() {
+  if (!FS_OK || !linkBtn) return;
+  let handle;
+  try { handle = await idbGet("handle"); } catch { return; }
+  if (!handle) return;
+  let perm = "denied";
+  try { perm = await handle.queryPermission({ mode: "readwrite" }); } catch {}
+  if (perm === "granted") {
+    await bindHandle(handle);
+    await idbSet("handle", handle).catch(() => {});
+    return;
+  }
+  // 'prompt' — needs a user gesture to re-grant; offer a one-click reconnect
+  linkBtn.hidden = false;
+  linkBtn.textContent = "◇ reconnect";
+  linkBtn.title = "re-open " + handle.name;
+  linkBtn.classList.add("attn");
+  linkBtn.onclick = async () => {
+    try {
+      const p = await handle.requestPermission({ mode: "readwrite" });
+      if (p !== "granted") { toast("permission denied"); return; }
+      linkBtn.onclick = linkFile;
+      await bindHandle(handle);
+      await idbSet("handle", handle).catch(() => {});
+      toast("reconnected ◆ " + handle.name);
+    } catch { toast("couldn't reconnect"); }
+  };
+}
+
+// The file is the source of truth: when the tab regains focus, pull in any
+// edits made to vaiven.presets.json outside the playground.
+async function syncFromFileOnFocus() {
+  if (!fileHandle || document.hidden) return;
+  try {
+    const disk = await readHandleText(fileHandle);
+    if (disk !== lastFileText) {
+      lastFileText = disk;
+      writeSession(disk.trim() ? JSON.parse(disk) : {});
+      renderShelf();
+      toast("shelf reloaded from file");
+    }
+  } catch {}
+}
+
+function initFileLink() {
+  if (!linkBtn) return;
+  if (!FS_OK) { linkBtn.hidden = true; return; }
+  linkBtn.hidden = false;
+  linkBtn.onclick = linkFile;
+  refreshLinkUI();
+  reconnectShelfFile();
+  document.addEventListener("visibilitychange", syncFromFileOnFocus);
+}
+
 renderShelf();
+initFileLink();
 
 // ----------------------------------------------------------------------- init
 function init() {
