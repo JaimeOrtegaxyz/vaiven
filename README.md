@@ -74,7 +74,7 @@ the same figure across patch and minor versions.
 
 The studio for composing figures — live pattern/shape pickers, sliders for
 every knob with ⓘ tips, gradient fill builder, SVG upload, undo/redo, and
-the whole config in the URL hash (share a look as a link).
+the whole config in the URL hash (bookmark a look to come back to it).
 
 In any project that has vaiven installed:
 
