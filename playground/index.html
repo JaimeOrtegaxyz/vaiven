@@ -384,20 +384,25 @@ const TIP_DELAY = 600;
 let tipTimer = 0;
 let tipWarmUntil = 0;
 function attachTip(target, text) {
+  const show = () => {
+    tip.textContent = text;
+    tip.style.display = "block";
+    const r = target.getBoundingClientRect();
+    const th = tip.offsetHeight;
+    let top = r.bottom + 6;
+    if (top + th > innerHeight - 8) top = r.top - th - 6;
+    tip.style.left = Math.min(Math.max(8, r.left), innerWidth - 240) + "px";
+    tip.style.top = top + "px";
+  };
   target.addEventListener("mouseenter", () => {
     clearTimeout(tipTimer);
-    const show = () => {
-      tip.textContent = text;
-      tip.style.display = "block";
-      const r = target.getBoundingClientRect();
-      const th = tip.offsetHeight;
-      let top = r.bottom + 6;
-      if (top + th > innerHeight - 8) top = r.top - th - 6;
-      tip.style.left = Math.min(Math.max(8, r.left), innerWidth - 240) + "px";
-      tip.style.top = top + "px";
-    };
     if (performance.now() < tipWarmUntil) show();
     else tipTimer = setTimeout(show, TIP_DELAY);
+  });
+  // A click is explicit intent — skip the rest-delay and show right away.
+  target.addEventListener("click", () => {
+    clearTimeout(tipTimer);
+    show();
   });
   target.addEventListener("mouseleave", () => {
     clearTimeout(tipTimer);
