@@ -9,7 +9,8 @@
  *
  * Geometry below is a line-for-line port of draw() in src/figure.js with the
  * interaction/rAF/observer plumbing removed. Pointer rests at center (0.5),
- * which makes the hover multiplier exactly 1.
+ * which makes the hover multiplier exactly 1. Known gap vs the engine:
+ * shape:"custom" (SVG paths) is not ported — such configs render as ellipses.
  */
 
 import { DEFAULTS, mergeConfig } from "../../../src/figure.js";
@@ -133,7 +134,8 @@ function drawPass(ctx, cfg, w, h, state, alphaScale) {
     strokeA = alphaScale;
     effLW = Math.max(effLW, 0.35);
   }
-  ctx.lineWidth = effLW / zoom;
+  // lineWidth is 340-reference px (WYSIWYG), matching figure.js's draw()
+  ctx.lineWidth = (effLW * unit) / zoom;
 
   const m = cfg.mirror;
   const passes = [[1, 1]];
