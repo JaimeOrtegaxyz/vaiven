@@ -332,7 +332,7 @@
         <div class="cards" id="shapes"></div>
       </div>
       <div class="strip">
-        <h2>SHELF</h2>
+        <h2 id="shelf-title">SHELF</h2>
         <div class="cards" id="shelf"></div>
       </div>
     </div>
@@ -1205,22 +1205,57 @@ function updateStrips() {
 }
 
 // ------------------------------------------------------------------- shelf
-// Per-session preset shelf: sessionStorage, so a new tab/window opens empty
-// but a reload doesn't wipe it. Save with inline naming; load by clicking;
-// remove on hover. Export via COPY ▾ · Shelf; import by dropping a
-// vaiven.presets.json onto the row. The project file is the durable store —
-// the shipped site still gets inlined configs.
+// Two modes, one in-memory object as the source of truth.
+//   live   — served by the workspace server (`npx vaiven` in a project):
+//            the shelf IS the project's vaiven.presets.json, read and
+//            written through /api/shelf. Saves land in the file directly.
+//   static — any plain file server: sessionStorage, so a new tab opens
+//            empty but a reload doesn't wipe it. Export via COPY ▾ · Shelf;
+//            import by dropping a vaiven.presets.json onto the row.
+// Either way the shipped site still gets inlined configs.
 const SHELF_KEY = "vaiven.shelf";
 const shelfWrap = $("#shelf");
 const shelfCards = [];
 try { localStorage.removeItem(SHELF_KEY); } catch {} // retire any old persisted shelf
 
-const loadShelf = () => {
-  try { return JSON.parse(sessionStorage.getItem(SHELF_KEY)) || {}; }
-  catch { return {}; }
+let shelf = {};
+let live = null; // { project, file } when the workspace server is behind us
+
+const loadShelf = () => shelf;
+const saveShelf = (obj) => {
+  shelf = obj;
+  if (live) {
+    fetch("/api/shelf", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(shelf),
+    }).then((r) => {
+      if (!r.ok) throw new Error();
+    }).catch(() => toast("couldn't write " + live.file));
+  } else {
+    try { sessionStorage.setItem(SHELF_KEY, JSON.stringify(shelf)); } catch {}
+  }
 };
-const saveShelf = (obj) => sessionStorage.setItem(SHELF_KEY, JSON.stringify(obj));
-const shelfCount = () => Object.keys(loadShelf()).length;
+const shelfCount = () => Object.keys(shelf).length;
+
+async function initShelf() {
+  try {
+    const r = await fetch("/api/shelf");
+    if (r.ok && (r.headers.get("content-type") || "").includes("json")) {
+      const data = await r.json();
+      if (data && typeof data.presets === "object" && data.presets !== null) {
+        live = { project: data.project, file: data.file || "vaiven.presets.json" };
+        shelf = data.presets;
+        $("#shelf-title").textContent =
+          "SHELF · " + (data.project ? data.project + "/" : "") + live.file;
+        renderShelf();
+        return;
+      }
+    }
+  } catch {}
+  try { shelf = JSON.parse(sessionStorage.getItem(SHELF_KEY)) || {}; } catch { shelf = {}; }
+  renderShelf();
+}
 
 function addToShelf(name, cfg) {
   name = (name || "").trim();
@@ -1229,7 +1264,7 @@ function addToShelf(name, cfg) {
   s[name] = cfg;
   saveShelf(s);
   renderShelf();
-  toast("saved “" + name + "”");
+  toast(live ? "saved “" + name + "” → " + live.file : "saved “" + name + "”");
   return true;
 }
 
@@ -1302,7 +1337,7 @@ shelfWrap.addEventListener("drop", async (e) => {
   } catch { toast("couldn't read that presets file"); }
 });
 
-renderShelf();
+initShelf();
 
 // ----------------------------------------------------------------------- init
 function init() {

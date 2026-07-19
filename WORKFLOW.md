@@ -103,8 +103,11 @@ programmatic candidate generation.
 ## Step 4 — Pick & refine
 
 The user picks in the browser and refines live in the playground (sliders;
-`R` random, `0` reset, `⌘Z` undo). COPY CONFIG, then save the canonical
-JSON into `presets/` named for the slot (e.g. `hero.json`).
+`R` random, `0` reset, `⌘Z` undo). In a project with vaiven installed,
+`npx vaiven` serves the playground with the project's `vaiven.presets.json`
+shelf live — saving in the SHELF row writes the file directly. Otherwise
+COPY CONFIG, then save the canonical JSON into `presets/` named for the
+slot (e.g. `hero.json`).
 
 ## Step 5 — Install & embed (mode B)
 

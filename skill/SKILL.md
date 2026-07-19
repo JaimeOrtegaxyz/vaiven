@@ -90,10 +90,12 @@ the whole config rides in the hash:
 http://localhost:4633/playground/#<encodeURIComponent(JSON.stringify(config))>
 ```
 
-(The playground lives in the vaiven repo — `python3 -m http.server 4633` there,
-then open the link. When the playground is hosted, swap the origin.) If the
-project has a dev server, you may also embed a candidate and screenshot it in
-place to verify — design → render → look → refine, not fire-and-forget.
+(If the project has vaiven installed, run `npx vaiven --no-open` at the project
+root — it serves the playground on 4633 with the project's shelf live. Otherwise
+serve the vaiven repo: `python3 -m http.server 4633` there. When the playground
+is hosted, swap the origin.) If the project has a dev server, you may also embed
+a candidate and screenshot it in place to verify — design → render → look →
+refine, not fire-and-forget.
 
 ### 4 — Install the engine (once per project)
 
@@ -139,7 +141,9 @@ project root: **`vaiven.presets.json`** — a flat map of `name → config`:
 
 Keep it to the single file; never scaffold folders. The shelf is a design-time
 library for the human + agent — the shipped site still gets inlined configs.
-The playground's SHELF row reads/writes this same shape (COPY SHELF / IMPORT).
+When the playground runs via `npx vaiven` in the project, its SHELF row reads
+and writes this exact file live; served statically it falls back to COPY
+SHELF / drag-drop import of the same shape.
 
 ## Config quick reference
 

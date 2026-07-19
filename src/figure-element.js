@@ -14,7 +14,11 @@
 
 import { createFigure, mergeConfig, DEFAULTS, FALLBACK } from "./figure.js";
 
-class VaivenFigure extends HTMLElement {
+// In non-browser environments (SSR, Node tooling) importing this module is a
+// safe no-op: the class falls back to a dummy base and registration is skipped.
+const Base = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
+
+class VaivenFigure extends Base {
   static observedAttributes = ["config", "src", "preset"];
 
   #fig = null;
@@ -80,10 +84,12 @@ class VaivenFigure extends HTMLElement {
   }
 }
 
-if (!customElements.get("vaiven-figure")) {
-  customElements.define("vaiven-figure", VaivenFigure);
-}
-// legacy alias from the pre-name era
-if (!customElements.get("gen-figure")) {
-  customElements.define("gen-figure", class extends VaivenFigure {});
+if (typeof customElements !== "undefined") {
+  if (!customElements.get("vaiven-figure")) {
+    customElements.define("vaiven-figure", VaivenFigure);
+  }
+  // legacy alias from the pre-name era
+  if (!customElements.get("gen-figure")) {
+    customElements.define("gen-figure", class extends VaivenFigure {});
+  }
 }

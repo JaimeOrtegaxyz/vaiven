@@ -1,7 +1,7 @@
 {
   "name": "vaiven",
   "version": "0.1.0",
-  "description": "Calm, perpetually looping generative figures for the web. Zero-dependency Canvas 2D engine — every animation is a JSON config.",
+  "description": "Calm, perpetually looping generative figures for the web. Zero-dependency Canvas 2D engine — every animation is a JSON config. `npx vaiven` opens the local workspace to design and manage this project's figures.",
   "type": "module",
   "license": "MIT",
   "author": "Jaime Ortega",
@@ -9,8 +9,19 @@
     ".": "./src/figure.js",
     "./element": "./src/figure-element.js"
   },
+  "bin": {
+    "vaiven": "bin/vaiven.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "files": [
-    "src"
+    "src",
+    "bin",
+    "playground",
+    "presets",
+    "assets/fonts",
+    "assets/vaiven-logo.svg"
   ],
   "sideEffects": [
     "./src/figure-element.js"

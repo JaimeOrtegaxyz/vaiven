@@ -10,11 +10,15 @@ accelerate it ×10.
 
 ## Quick start
 
-Vendor the two files from `src/` (npm package coming):
+```sh
+npm i vaiven
+```
+
+```js
+import "vaiven/element"; // registers <vaiven-figure> (no-op during SSR)
+```
 
 ```html
-<script type="module" src="/vendor/vaiven/figure-element.js"></script>
-
 <vaiven-figure config='{"layout":"wave-x","count":65,"twist":4.7,"floor":0.2}'
                style="max-width:480px"></vaiven-figure>
 
@@ -25,16 +29,27 @@ Vendor the two files from `src/` (npm package coming):
 Or drive a canvas directly:
 
 ```js
-import { createFigure } from "./src/figure.js";
+import { createFigure } from "vaiven";
 
 const fig = createFigure(canvas, { layout: "ring", count: 56, orbit: 0.5 });
 // fig.set({ ... })  ·  fig.pause()  ·  fig.resume()  ·  fig.destroy()
 ```
 
+No bundler? Vendor `src/figure.js` + `src/figure-element.js` (plain ESM,
+zero deps) or load from a CDN:
+
+```html
+<script type="module" src="https://esm.sh/vaiven/element"></script>
+```
+
 Configs are fully self-contained — even custom SVG shapes travel inside the
 JSON as path data. An embed with no config (or a failed load) renders a
 deliberately loud green/pink fallback figure, so a broken embed is
-impossible to miss.
+impossible to miss. TypeScript types for every knob ship with the package.
+
+**The config is the API.** Projects accumulate configs — in
+`vaiven.presets.json`, in embeds, in links. A saved config keeps rendering
+the same figure across patch and minor versions.
 
 ## The knobs
 
@@ -55,17 +70,28 @@ impossible to miss.
 - **Camera**: `zoom` (stroke width stays constant), `offsetX`/`offsetY`
   (pan; ±1 = figure center at the view edge), `rotate` (degrees).
 
-## The playground
+## The workspace
 
 The studio for composing figures — live pattern/shape pickers, sliders for
 every knob with ⓘ tips, gradient fill builder, SVG upload, undo/redo, and
 the whole config in the URL hash (share a look as a link).
 
+In any project that has vaiven installed:
+
 ```sh
-cd vaiven
-python3 -m http.server 4633
+npx vaiven
 # → http://localhost:4633/playground/
 ```
+
+This serves the playground *for that project*: the SHELF row reads and
+writes `vaiven.presets.json` at the project root, live. Open the workspace,
+see every saved look the project has, tweak, rename, delete — then embed a
+config yourself or hand the shelf to an agent to wire in. (`--port`,
+`--no-open`, `--shelf <path>`, `--help`.)
+
+In this repo, any static server works too (`python3 -m http.server 4633`);
+without the workspace server behind it, the shelf falls back to
+per-session storage with COPY / drag-drop import.
 
 ## Files
 
@@ -73,6 +99,10 @@ python3 -m http.server 4633
   `DEFAULTS`, `FALLBACK`, `randomConfig`, `mutateConfig`, `mergeConfig`.
 - `src/figure-element.js` — `<vaiven-figure>` web component (`config`,
   `src`, or `preset` attribute; `<gen-figure>` kept as a legacy alias).
+  `preset` resolves `../presets/` next to the engine files — it works when
+  vaiven's files are served as-is (vendored, or via the workspace server);
+  in bundled apps use `config` or `src`.
+- `bin/vaiven.mjs` — the workspace server behind `npx vaiven`.
 - `playground/` — the editor.
 - `presets/*.json` — saved configs; anchors for the workflow.
 - `WORKFLOW.md` — the interview → candidates → pick → install workflow
