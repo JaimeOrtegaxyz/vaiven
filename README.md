@@ -97,14 +97,11 @@ per-session storage with COPY / drag-drop import.
 
 - `src/figure.js` — the engine: `createFigure(canvas, config)`, plus
   `DEFAULTS`, `FALLBACK`, `randomConfig`, `mutateConfig`, `mergeConfig`.
-- `src/figure-element.js` — `<vaiven-figure>` web component (`config`,
-  `src`, or `preset` attribute; `<gen-figure>` kept as a legacy alias).
-  `preset` resolves `../presets/` next to the engine files — it works when
-  vaiven's files are served as-is (vendored, or via the workspace server);
-  in bundled apps use `config` or `src`.
+- `src/figure-element.js` — `<vaiven-figure>` web component (`config` or
+  `src` attribute; `<gen-figure>` kept as a legacy alias).
 - `bin/vaiven.mjs` — the workspace server behind `npx vaiven`.
-- `playground/` — the editor.
-- `presets/*.json` — saved configs; anchors for the workflow.
+- `playground/` — the editor; the SHELF row curates a project's saved looks
+  (`vaiven.presets.json`).
 - `WORKFLOW.md` — the interview → candidates → pick → install workflow
   (draft of the future skill). `PRODUCT.md` — design system + register.
 

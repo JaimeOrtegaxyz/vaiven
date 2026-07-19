@@ -78,7 +78,8 @@ export interface FigureConfig {
   orbit?: number;
   /** How many times the orbit winds across the sweep. */
   coil?: number;
-  /** Outline thickness (0 = no outline). */
+  /** Outline thickness in 340-reference px — the stroke-to-shape ratio holds
+   * at any canvas size (0 = no outline). */
   lineWidth?: number;
   /** Fill opacity — low values + multiply/screen give washes. */
   fillAlpha?: number;

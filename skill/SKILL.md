@@ -112,8 +112,8 @@ Wire the one-time registration in the app entry: `import "vaiven/element";`
 ### 5 — Embed (framework-aware, inline the config)
 
 Insert into the located file. **Inline the chosen config** — do not make the
-site depend on the shelf at runtime. Use `config` or `src`, never `preset`
-(presets don't ship in the npm package).
+site depend on the shelf at runtime. Use `config` (inline JSON) or `src` (a
+committed JSON file).
 
 ```html
 <vaiven-figure config='{"layout":"ring","count":56,"floor":0.2}' style="max-width:480px"></vaiven-figure>
@@ -122,9 +122,16 @@ site depend on the shelf at runtime. Use `config` or `src`, never `preset`
 - **React/Next**: `<vaiven-figure config={JSON.stringify(cfg)} style={{maxWidth:480}} />`, or `createFigure` against a `useRef` canvas in `useEffect` (call `fig.destroy()` on cleanup).
 - **Plain HTML, no bundler**: vendor the files and `<script type="module" src="/vendor/vaiven/figure-element.js">`.
 
-Size with CSS (host is `display:block`, default `aspect-ratio: 340/270`).
-Offscreen-pause, reduced-motion, hold-to-accelerate and hover-reshape are
-already built in — no extra wiring.
+Size with CSS (host is `display:block`, default `aspect-ratio: 340/270`). Size
+the SLOT, not the figure — the figure crops/fits into whatever CSS box you give
+it and never resizes the host. With the canvas API (`createFigure`), set only
+the CSS size and let the engine own `canvas.width/height` (it applies DPR);
+never set those attributes yourself, or the figure renders at 1× (blurry, thick
+strokes). `lineWidth` is 340-reference px and scales with figure size, so a
+config's stroke-to-shape ratio is identical at any canvas size — pick it for the
+ratio you want (a config tuned in the large playground usually needs a lower
+`lineWidth` to read as a hairline in a smaller slot). Offscreen-pause,
+reduced-motion, hold-to-accelerate and hover-reshape are built in — no wiring.
 
 ### 6 — The per-project shelf
 

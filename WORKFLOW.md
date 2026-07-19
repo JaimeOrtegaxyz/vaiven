@@ -27,7 +27,7 @@ skill-creator.
 ## Entry modes
 
 - **A. Standalone ideation** (this repo): explore in the playground, save
-  presets for later use.
+  looks to the shelf (`vaiven.presets.json`) for later use.
 - **B. Integration** (a target repo): "we need figures for sections X/Y/Z" →
   interview → candidates → pick → install.
 
@@ -64,8 +64,7 @@ The mapping only chooses the starting neighborhood — iterate visually from
 there and keep whatever looks best, meaning be damned.
 
 **Ink style is a second, independent axis**, chosen by the surface it sits on
-(knobs: `blend`, `fillAlpha`, `strokeAlpha`, `trail`; anchors: the veil /
-phosphor / comet presets):
+(knobs: `blend`, `fillAlpha`, `strokeAlpha`, `trail`):
 
 | Surface | Style |
 | --- | --- |
@@ -91,11 +90,11 @@ produce coiled tubes, toruses and circular clusters).
 
 ## Step 3 — Candidates
 
-For each slot produce 3–5 configs. Start from the nearest preset in
-`presets/`, then change **one dominant knob per candidate** (density, twist
-pitch, squash, or layout) so the choice reads clearly. Save them to
-`presets/candidates/<slot>-<a|b|c>.json`, then hand over playground URLs (the
-whole config lives in the hash) or a simple review grid page.
+For each slot produce 3–5 configs. Start from `DEFAULTS` or a `randomConfig()`
+seed, then change **one dominant knob per candidate** (density, twist pitch,
+squash, or layout) so the choice reads clearly. Keep the working candidates on
+the shelf (`vaiven.presets.json`), then hand over playground URLs (the whole
+config lives in the hash) or a simple review grid page.
 
 `randomConfig()` / `mutateConfig()` from `src/figure.js` are available for
 programmatic candidate generation.
@@ -106,8 +105,8 @@ The user picks in the browser and refines live in the playground (sliders;
 `R` random, `0` reset, `⌘Z` undo). In a project with vaiven installed,
 `npx vaiven` serves the playground with the project's `vaiven.presets.json`
 shelf live — saving in the SHELF row writes the file directly. Otherwise
-COPY CONFIG, then save the canonical JSON into `presets/` named for the
-slot (e.g. `hero.json`).
+COPY CONFIG, then save the canonical look to the shelf (`vaiven.presets.json`)
+named for the slot (e.g. `hero`).
 
 ## Step 5 — Install & embed (mode B)
 

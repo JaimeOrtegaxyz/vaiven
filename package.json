@@ -19,7 +19,6 @@
     "src",
     "bin",
     "playground",
-    "presets",
     "assets/fonts",
     "assets/vaiven-logo.svg"
   ],

@@ -1148,18 +1148,16 @@ function makeCard(wrap, tagText) {
   return { card, h };
 }
 
-// Cards are miniatures. The engine keeps stroke width constant in CSS px
-// (so an embed matches the main view), which on a ~8× smaller canvas reads
-// as thick re-inking — scale the stroke by the size ratio instead, so a
-// preview looks like the main view seen from farther away.
+// The engine is WYSIWYG — lineWidth is 340-reference px, so the
+// stroke-to-shape ratio holds at any canvas size and a card is already a
+// true miniature. The one correction still needed is anti-shimmer: at card
+// size a hairline goes sub-device-pixel and flickers in motion, so floor
+// the stroke at ~0.6 device px, expressed in reference units.
 function previewSet(h, cfg) {
-  const mw = fig.canvas.getBoundingClientRect().width || 880;
-  const cw = h.canvas.getBoundingClientRect().width;
-  const k = cw ? Math.min(1, Math.max(0.02, cw / mw)) : 0.16;
-  // Truly proportional strokes go sub-device-pixel at card size and shimmer
-  // in motion — floor at ~0.6 device px, the thinnest width that stays stable.
-  const floor = 0.6 / Math.min(2, devicePixelRatio || 1);
-  const lw = cfg.lineWidth > 0 ? Math.max(floor, cfg.lineWidth * k) : 0;
+  const r = h.canvas.getBoundingClientRect();
+  const unit = (Math.min(r.width, r.height) || 88) / 340;
+  const floor = 0.6 / Math.min(2, devicePixelRatio || 1) / unit;
+  const lw = cfg.lineWidth > 0 ? Math.max(cfg.lineWidth, floor) : 0;
   h.set({ ...cfg, fps: 20, lineWidth: lw });
 }
 

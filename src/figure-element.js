@@ -5,11 +5,10 @@
  *   <script type="module" src=".../figure-element.js"></script>
  *   <vaiven-figure config='{"layout":"ring","count":56}'></vaiven-figure>
  *   <vaiven-figure src="/figures/hero.json"></vaiven-figure>
- *   <vaiven-figure preset="shell"></vaiven-figure>   (presets/ next to src/)
  *
  * <gen-figure> is registered as a legacy alias.
  * Size it with CSS; the host is display:block with a default 340/270
- * aspect-ratio. `config` merges on top of `src`/`preset` when both are set.
+ * aspect-ratio. `config` merges on top of `src` when both are set.
  */
 
 import { createFigure, mergeConfig, DEFAULTS, FALLBACK } from "./figure.js";
@@ -19,7 +18,7 @@ import { createFigure, mergeConfig, DEFAULTS, FALLBACK } from "./figure.js";
 const Base = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
 
 class VaivenFigure extends Base {
-  static observedAttributes = ["config", "src", "preset"];
+  static observedAttributes = ["config", "src"];
 
   #fig = null;
   #canvas = null;
@@ -50,13 +49,9 @@ class VaivenFigure extends Base {
     const token = ++this.#token;
     let config = null;
     const src = this.getAttribute("src");
-    const preset = this.getAttribute("preset");
     try {
       if (src) {
         config = await (await fetch(src)).json();
-      } else if (preset) {
-        const url = new URL(`../presets/${preset}.json`, import.meta.url);
-        config = await (await fetch(url)).json();
       }
     } catch (err) {
       console.warn("<vaiven-figure>failed to load config:", err);
