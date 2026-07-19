@@ -134,10 +134,10 @@ export const MOODS = [
       orbit: 0.5,
       coil: 13,
       lineWidth: 0.85,
-      fillAlpha: 0.14,
-      strokeAlpha: 0.85,
+      fillAlpha: 0.05,
+      strokeAlpha: 0.35,
       blend: "lighter",
-      trail: 0.8,
+      trail: 0.55,
       seed: 3,
       colors: {
         bg: "#12002E",
