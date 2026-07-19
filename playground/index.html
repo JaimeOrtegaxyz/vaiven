@@ -373,18 +373,32 @@ const fig = createFigure($("#main-canvas"), {});
 const tip = el("div");
 tip.id = "tip";
 document.body.append(tip);
+// Tooltips need hover intent: they open only after the pointer rests a beat,
+// so sweeping across the sidebar never fires them. Once one has shown,
+// neighbors open instantly for a short warm window — deliberate exploration
+// stays fluid, only the first tip asks for patience.
+const TIP_DELAY = 600;
+let tipTimer = 0;
+let tipWarmUntil = 0;
 function attachTip(target, text) {
   target.addEventListener("mouseenter", () => {
-    tip.textContent = text;
-    tip.style.display = "block";
-    const r = target.getBoundingClientRect();
-    const th = tip.offsetHeight;
-    let top = r.bottom + 6;
-    if (top + th > innerHeight - 8) top = r.top - th - 6;
-    tip.style.left = Math.min(Math.max(8, r.left), innerWidth - 240) + "px";
-    tip.style.top = top + "px";
+    clearTimeout(tipTimer);
+    const show = () => {
+      tip.textContent = text;
+      tip.style.display = "block";
+      const r = target.getBoundingClientRect();
+      const th = tip.offsetHeight;
+      let top = r.bottom + 6;
+      if (top + th > innerHeight - 8) top = r.top - th - 6;
+      tip.style.left = Math.min(Math.max(8, r.left), innerWidth - 240) + "px";
+      tip.style.top = top + "px";
+    };
+    if (performance.now() < tipWarmUntil) show();
+    else tipTimer = setTimeout(show, TIP_DELAY);
   });
   target.addEventListener("mouseleave", () => {
+    clearTimeout(tipTimer);
+    if (tip.style.display === "block") tipWarmUntil = performance.now() + 1000;
     tip.style.display = "none";
   });
 }
@@ -1317,9 +1331,10 @@ function renderShelf() {
   const atag = el("span", "tag");
   atag.textContent = "current look";
   add.append(thumb, atag);
-  // Saving is two-step like delete: ↵ arms — the tag inks to "save? ↵" /
-  // "update? ↵" / "replaces “x”? ↵" — and a second ↵ (or a click on the
-  // card) commits. Typing again disarms.
+  // A new name saves on the first ↵ — nothing is at risk. Overwrites are
+  // two-step like delete: ↵ arms — the tag inks to "update? ↵" (the loaded
+  // look) or "replaces “x”? ↵" (a different one) — and a second ↵ (or a
+  // click on the card) commits. Typing again disarms.
   let inp = null;
   let pending = null; // the armed name, awaiting its confirming ↵ / click
   const commitSave = () => {
@@ -1362,15 +1377,17 @@ function renderShelf() {
       if (e.key === "Enter") {
         const name = inp.value.trim();
         if (!name) return;
+        if (!(name in loadShelf())) {
+          if (addToShelf(name, exportable(fig.config))) activeName = name;
+          return;
+        }
         if (pending === name) {
           commitSave();
           return;
         }
         pending = name;
         atag.classList.add("confirm");
-        atag.textContent = name === editing ? "update? ↵"
-          : name in loadShelf() ? "replaces “" + name + "”? ↵"
-          : "save? ↵";
+        atag.textContent = name === editing ? "update? ↵" : "replaces “" + name + "”? ↵";
       } else if (e.key === "Escape") resetCard();
     };
     inp.onblur = () => { if (inp && thumb.contains(inp)) resetCard(); };
