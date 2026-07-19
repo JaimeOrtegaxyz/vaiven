@@ -90,6 +90,7 @@
     display: block; padding: 3px 6px 4px; font: 9px var(--mono);
     letter-spacing: .08em; color: var(--faint); text-transform: uppercase;
     border-top: 1px solid var(--line);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   }
   .card.sel .tag { color: var(--ink); }
   .card.upload .thumb {
@@ -120,7 +121,7 @@
   }
   .cards.drop { outline: 1px dashed var(--faint); outline-offset: 4px; border-radius: 4px; }
   .card .del {
-    position: absolute; top: 4px; right: 4px; width: 18px; height: 18px;
+    position: absolute; top: 4px; right: 4px; height: 18px; min-width: 18px;
     display: none; align-items: center; justify-content: center;
     background: var(--paper); color: var(--faint);
     border: 1px solid var(--line); border-radius: 3px;
@@ -128,6 +129,12 @@
   }
   .card:hover .del { display: flex; }
   .card .del:hover { color: var(--ink); border-color: var(--ink); }
+  .card .del svg { width: 11px; height: 11px; display: block; }
+  .card .del.confirm {
+    display: flex; padding: 0 6px;
+    font: 9px var(--mono); letter-spacing: .06em;
+    background: var(--ink); color: var(--paper); border-color: var(--ink);
+  }
 
   .sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
@@ -1018,6 +1025,7 @@ function reset() {
   d.colors = cur.colors;
   d.path = cur.path;
   applyConfig(d);
+  activeName = null; // a fresh document — no longer editing a shelf look
 }
 
 function toast(msg) {
@@ -1115,6 +1123,17 @@ function makeCard(wrap, tagText) {
   return { card, h };
 }
 
+// Cards are miniatures. The engine keeps stroke width constant in CSS px
+// (so an embed matches the main view), which on a ~8× smaller canvas reads
+// as thick re-inking — scale the stroke by the size ratio instead, so a
+// preview looks like the main view seen from farther away.
+function previewSet(h, cfg) {
+  const mw = fig.canvas.getBoundingClientRect().width || 880;
+  const cw = h.canvas.getBoundingClientRect().width;
+  const k = cw ? Math.min(1, Math.max(0.02, cw / mw)) : 0.16;
+  h.set({ ...cfg, fps: 20, lineWidth: (cfg.lineWidth ?? DEFAULTS.lineWidth) * k });
+}
+
 const patternsWrap = $("#patterns");
 for (const layout of LAYOUTS) {
   const { card, h } = makeCard(patternsWrap, layout);
@@ -1192,17 +1211,22 @@ function markSelection() {
 
 function updateStrips() {
   const base = fig.config;
-  for (const { layout, h } of patternCards) h.set({ ...base, layout, fps: 20 });
+  for (const { layout, h } of patternCards) previewSet(h, { ...base, layout });
   for (const { shape, h, card } of shapeCards) {
     if (shape === "custom") {
       card.style.display = base.path ? "" : "none";
-      if (base.path) h.set({ ...base, shape: "custom", fps: 20 });
+      if (base.path) previewSet(h, { ...base, shape: "custom" });
       continue;
     }
-    h.set({ ...base, shape, fps: 20 });
+    previewSet(h, { ...base, shape });
   }
   markSelection();
 }
+// The preview stroke ratio depends on layout widths — refresh after resizes.
+addEventListener("resize", () => {
+  clearTimeout(stripsTimer);
+  stripsTimer = setTimeout(updateStrips, 200);
+});
 
 // ------------------------------------------------------------------- shelf
 // Two modes, one in-memory object as the source of truth.
@@ -1257,14 +1281,19 @@ async function initShelf() {
   renderShelf();
 }
 
+// The look most recently loaded from the shelf — its name prefills the save
+// card, so "click a look, tweak, + save, ↵" is the whole edit loop.
+let activeName = null;
+
 function addToShelf(name, cfg) {
   name = (name || "").trim();
   if (!name) return false;
   const s = loadShelf();
+  const verb = name in s ? "updated" : "saved";
   s[name] = cfg;
   saveShelf(s);
   renderShelf();
-  toast(live ? "saved “" + name + "” → " + live.file : "saved “" + name + "”");
+  toast(live ? verb + " “" + name + "” → " + live.file : verb + " “" + name + "”");
   return true;
 }
 
@@ -1286,36 +1315,83 @@ function renderShelf() {
     // The hint lives in the tag, not a placeholder — a centered empty input
     // would blink its caret right on top of centered placeholder text.
     thumb.textContent = "";
-    atag.textContent = "name it ↵";
     const inp = el("input", "name-input");
     thumb.append(inp);
-    inp.focus();
-    const reset = () => { thumb.textContent = "+ save"; atag.textContent = "current look"; };
-    inp.onkeydown = (e) => {
-      if (e.key === "Enter") addToShelf(inp.value, exportable(fig.config));
-      else if (e.key === "Escape") reset();
+    // Editing a loaded look: prefill its name (selected, so a new name is
+    // one keystroke away) and say plainly that ↵ updates it.
+    const editing = activeName && activeName in loadShelf() ? activeName : null;
+    const hint = () => {
+      atag.textContent = editing && inp.value.trim() === editing
+        ? "update “" + editing + "” ↵"
+        : "name it ↵";
     };
-    inp.onblur = () => { if (thumb.contains(inp)) reset(); };
+    if (editing) inp.value = editing;
+    hint();
+    inp.focus();
+    inp.select();
+    let pendingReplace = null; // overwriting a *different* look asks for ↵ twice
+    const resetCard = () => { thumb.textContent = "+ save"; atag.textContent = "current look"; };
+    inp.oninput = () => {
+      pendingReplace = null;
+      hint();
+    };
+    inp.onkeydown = (e) => {
+      if (e.key === "Enter") {
+        const name = inp.value.trim();
+        if (!name) return;
+        if (name in loadShelf() && name !== editing && pendingReplace !== name) {
+          pendingReplace = name;
+          atag.textContent = "replaces “" + name + "” ↵";
+          return;
+        }
+        if (addToShelf(name, exportable(fig.config))) activeName = name;
+      } else if (e.key === "Escape") resetCard();
+    };
+    inp.onblur = () => { if (thumb.contains(inp)) resetCard(); };
   };
   shelfWrap.append(add);
 
+  const TRASH =
+    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M4 7h16M10 7V5h4v2M6.5 7l1 13h9l1-13M10 11v5.5M14 11v5.5"/></svg>';
+
   for (const [name, cfg] of Object.entries(loadShelf())) {
     const { card, h } = makeCard(shelfWrap, name);
-    h.set({ ...mergeConfig(DEFAULTS, cfg), fps: 20 });
+    previewSet(h, mergeConfig(DEFAULTS, cfg));
     card.addEventListener("click", () => {
       applyConfig(mergeConfig(DEFAULTS, cfg));
+      activeName = name;
       toast("loaded “" + name + "”");
     });
+    // Delete confirms in place: first click arms the button, second deletes.
+    // Leaving the card (or 2.6s) disarms.
     const del = el("span", "del");
-    del.textContent = "×";
-    del.title = "remove";
+    del.title = "delete";
+    del.innerHTML = TRASH;
+    let disarmT = 0;
+    const disarm = () => {
+      clearTimeout(disarmT);
+      del.classList.remove("confirm");
+      del.innerHTML = TRASH;
+    };
     del.onclick = (e) => {
       e.stopPropagation();
+      if (!del.classList.contains("confirm")) {
+        del.classList.add("confirm");
+        del.textContent = "delete?";
+        disarmT = setTimeout(disarm, 2600);
+        return;
+      }
+      clearTimeout(disarmT);
       const s = loadShelf();
       delete s[name];
       saveShelf(s);
+      if (name === activeName) activeName = null;
       renderShelf();
+      toast(live ? "deleted “" + name + "” from " + live.file : "deleted “" + name + "”");
     };
+    card.addEventListener("mouseleave", disarm);
     card.append(del);
     shelfCards.push({ name, h, card });
   }
