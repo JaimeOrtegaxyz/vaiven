@@ -135,6 +135,9 @@
     font: 9px var(--mono); letter-spacing: .06em;
     background: var(--ink); color: var(--paper); border-color: var(--ink);
   }
+  .card .tag.confirm {
+    background: var(--ink); color: var(--paper); border-top-color: var(--ink);
+  }
 
   .sidebar {
     display: flex; flex-direction: column; min-height: 0; overflow: hidden;
@@ -1131,7 +1134,11 @@ function previewSet(h, cfg) {
   const mw = fig.canvas.getBoundingClientRect().width || 880;
   const cw = h.canvas.getBoundingClientRect().width;
   const k = cw ? Math.min(1, Math.max(0.02, cw / mw)) : 0.16;
-  h.set({ ...cfg, fps: 20, lineWidth: (cfg.lineWidth ?? DEFAULTS.lineWidth) * k });
+  // Truly proportional strokes go sub-device-pixel at card size and shimmer
+  // in motion — floor at ~0.6 device px, the thinnest width that stays stable.
+  const floor = 0.6 / Math.min(2, devicePixelRatio || 1);
+  const lw = cfg.lineWidth > 0 ? Math.max(floor, cfg.lineWidth * k) : 0;
+  h.set({ ...cfg, fps: 20, lineWidth: lw });
 }
 
 const patternsWrap = $("#patterns");
@@ -1310,17 +1317,28 @@ function renderShelf() {
   const atag = el("span", "tag");
   atag.textContent = "current look";
   add.append(thumb, atag);
+  // Saving is two-step like delete: ↵ arms — the tag inks to "save? ↵" /
+  // "update? ↵" / "replaces “x”? ↵" — and a second ↵ (or a click on the
+  // card) commits. Typing again disarms.
+  let inp = null;
+  let pending = null; // the armed name, awaiting its confirming ↵ / click
+  const commitSave = () => {
+    const name = pending;
+    pending = null;
+    if (name && addToShelf(name, exportable(fig.config))) activeName = name;
+  };
   add.onclick = () => {
-    if (thumb.querySelector("input")) return;
+    if (inp && thumb.contains(inp)) return; // confirm-clicks land in pointerdown
     // The hint lives in the tag, not a placeholder — a centered empty input
     // would blink its caret right on top of centered placeholder text.
     thumb.textContent = "";
-    const inp = el("input", "name-input");
+    inp = el("input", "name-input");
     thumb.append(inp);
     // Editing a loaded look: prefill its name (selected, so a new name is
     // one keystroke away) and say plainly that ↵ updates it.
     const editing = activeName && activeName in loadShelf() ? activeName : null;
     const hint = () => {
+      atag.classList.remove("confirm");
       atag.textContent = editing && inp.value.trim() === editing
         ? "update “" + editing + "” ↵"
         : "name it ↵";
@@ -1329,26 +1347,42 @@ function renderShelf() {
     hint();
     inp.focus();
     inp.select();
-    let pendingReplace = null; // overwriting a *different* look asks for ↵ twice
-    const resetCard = () => { thumb.textContent = "+ save"; atag.textContent = "current look"; };
+    const resetCard = () => {
+      pending = null;
+      inp = null;
+      thumb.textContent = "+ save";
+      atag.classList.remove("confirm");
+      atag.textContent = "current look";
+    };
     inp.oninput = () => {
-      pendingReplace = null;
+      pending = null;
       hint();
     };
     inp.onkeydown = (e) => {
       if (e.key === "Enter") {
         const name = inp.value.trim();
         if (!name) return;
-        if (name in loadShelf() && name !== editing && pendingReplace !== name) {
-          pendingReplace = name;
-          atag.textContent = "replaces “" + name + "” ↵";
+        if (pending === name) {
+          commitSave();
           return;
         }
-        if (addToShelf(name, exportable(fig.config))) activeName = name;
+        pending = name;
+        atag.classList.add("confirm");
+        atag.textContent = name === editing ? "update? ↵"
+          : name in loadShelf() ? "replaces “" + name + "”? ↵"
+          : "save? ↵";
       } else if (e.key === "Escape") resetCard();
     };
-    inp.onblur = () => { if (thumb.contains(inp)) resetCard(); };
+    inp.onblur = () => { if (inp && thumb.contains(inp)) resetCard(); };
   };
+  // Confirm-by-click must run on pointerdown, before the input's blur wipes
+  // the armed state.
+  add.addEventListener("pointerdown", (e) => {
+    if (inp && thumb.contains(inp) && pending) {
+      e.preventDefault(); // keep focus on the input; this click is the confirmation
+      commitSave();
+    }
+  });
   shelfWrap.append(add);
 
   const TRASH =
