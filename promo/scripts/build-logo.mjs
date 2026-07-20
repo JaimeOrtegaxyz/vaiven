@@ -60,10 +60,15 @@ ${pathJsx}
 `;
 writeFileSync(join(root, "src", "Logo.jsx"), component);
 
-// Ink copy for the (light) playground header.
+// Ink copy for the (light) playground header; cream copy for dark surfaces
+// (the README's prefers-color-scheme dark variant).
 writeFileSync(
   join(root, "..", "assets", "vaiven-logo.svg"),
   master.replace(/fill="(?!none")[^"]*"/g, 'fill="#1E1E1E"')
 );
+writeFileSync(
+  join(root, "..", "assets", "vaiven-logo-cream.svg"),
+  master.replace(/fill="(?!none")[^"]*"/g, 'fill="#F5F4F1"')
+);
 
-console.log(`wrote promo/src/Logo.jsx and assets/vaiven-logo.svg (ink, ${paths.length} paths)`);
+console.log(`wrote promo/src/Logo.jsx, assets/vaiven-logo.svg (ink) and assets/vaiven-logo-cream.svg (${paths.length} paths)`);
