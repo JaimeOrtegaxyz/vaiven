@@ -11,6 +11,8 @@
 
 <br>
 
+<img src="assets/vaiven-demo.gif" alt="vaiven figures in motion" width="100%">
+
 Calm, endlessly looping generative figures for the web. One zero-dependency
 Canvas 2D engine (two plain ES modules, ~9KB gzipped) where **every animation is a
 JSON config**: many simple shapes, arranged and breathed by a couple dozen
