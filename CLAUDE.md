@@ -39,8 +39,8 @@ real web projects; the **playground** is the instrument used to compose them.
   that shelf at `/vaiven.presets.json` (like a deployed site would).
 - `skill/` — the shippable Claude skill (`SKILL.md` + `reference/config.md` +
   `install.sh`). The consumer-facing product.
-- `promo/` — a Remotion promo video (React, **its own** `package.json`/deps;
-  the zero-dep rule does not apply inside `promo/`).
+- `scripts/build-logo.mjs` — regenerates `assets/vaiven-logo.svg` (ink) and
+  `assets/vaiven-logo-cream.svg` from `assets/vaiven-logo-master.svg`.
 - `PRODUCT.md` — design system + register. `WORKFLOW.md` — the interview →
   candidates → pick → install workflow (the proto-skill). Keep these and
   `skill/SKILL.md` in sync when the workflow changes.
@@ -112,8 +112,6 @@ press scale 0.96; `prefers-reduced-motion` disables all of it.
   project with vaiven installed) → `http://localhost:4633/playground/` with
   the shelf live. Static fallback: `python3 -m http.server 4633`.
 - Engine: nothing to build — it's shipped source.
-- Promo video: `cd promo && npm i`, then `npm run studio` (Remotion Studio),
-  `npm run render` (→ `out/vaiven-promo.mp4`), or `npm run still`.
 - Published as **`@jaimeortega/vaiven`** (npm's similarity rule blocks
   unscoped `vaiven` — too close to `raven`). The bin stays `vaiven`, so
   `npx vaiven` works in any project that has it installed. Do not

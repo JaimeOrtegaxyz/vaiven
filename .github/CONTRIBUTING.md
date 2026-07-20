@@ -8,8 +8,7 @@ ground rules keep it that way.
 - **Zero dependencies, no build step.** The engine (`src/`) is two plain ES
   modules, shipped as source. PRs that add a bundler, transpiler, or runtime
   dependency to the engine, element, or `bin/` will be declined regardless of
-  merit. (`promo/` is the one exception — it's a Remotion project with its own
-  `package.json`.)
+  merit.
 - **Config-driven.** New expressive power should be a new knob in `DEFAULTS`
   (with matching types in `src/figure.d.ts` and docs in
   `skill/reference/config.md`), not a new code path per figure.
