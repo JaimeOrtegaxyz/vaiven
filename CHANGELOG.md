@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.1 — unreleased
+## 0.1.1 — 2026-07-20
 
 - Removed the `star` shape — six built-ins remain (circle, square, triangle,
   diamond, pentagon, hexagon) plus `custom`. A `shape: "star"` config now
