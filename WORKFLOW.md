@@ -112,16 +112,24 @@ named for the slot (e.g. `hero`).
 
 1. `npm i vaiven` — or copy `src/figure.js` + `src/figure-element.js` into the
    target repo (e.g. `public/vendor/vaiven/` — they're plain ESM, zero deps).
-2. Commit the chosen configs as JSON next to them.
-3. Embed:
+2. Put the chosen looks in the shelf (`vaiven.presets.json`) and serve it with
+   the site's static assets (Next/Vite `public/`, plain sites the web root).
+3. Embed by reference — the shelf is the source of truth; editing a preset
+   changes what the site serves, no re-sync:
 
 ```html
 <script type="module" src="/vendor/vaiven/figure-element.js"></script>
 
-<vaiven-figure src="/vendor/vaiven/hero.json" style="max-width:480px"></vaiven-figure>
-<!-- or inline: -->
+<vaiven-figure preset="hero" style="max-width:480px"></vaiven-figure>
+<!-- custom shelf location: -->
+<vaiven-figure src="/assets/my-shelf.json#hero"></vaiven-figure>
+<!-- inline (no-server contexts, ship-time freeze, per-instance override): -->
 <vaiven-figure config='{"layout":"ring","count":56,"floor":0.2}'></vaiven-figure>
 ```
+
+Fetches of the same shelf are deduped (a page of figures = one request); a
+broken reference renders the loud fallback figure. Inline `config` on top of
+`preset` overrides per instance and doubles as a fallback if the fetch fails.
 
 Size via CSS (host is `display:block`, default `aspect-ratio: 340/270`).
 Defaults already include press-accelerate, hover-reshape, offscreen pause,

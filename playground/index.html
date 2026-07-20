@@ -326,6 +326,7 @@
       <div class="menu" id="copy-menu" hidden>
         <button type="button" data-copy="config">Config JSON</button>
         <button type="button" data-copy="embed">Embed snippet</button>
+        <button type="button" data-copy="preset">Embed · preset ref</button>
         <button type="button" data-copy="shelf">Shelf · presets.json</button>
       </div>
     </div>
@@ -1080,11 +1081,20 @@ const embedSnippet = () => {
   return `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
     `<vaiven-figure style="max-width:480px" config='${json}'></vaiven-figure>`;
 };
+// Reference embed: the shelf is the source of truth — the site serves
+// vaiven.presets.json and the embed names its entry.
+const presetSnippet = (name) =>
+  `<vaiven-figure preset="${name.replace(/"/g, "&quot;")}" style="max-width:480px"></vaiven-figure>`;
+const editingName = () => (activeName && activeName in loadShelf() ? activeName : null);
 const copyMenu = $("#copy-menu");
 const closeCopyMenu = () => { copyMenu.hidden = true; };
 $("#btn-copy").onclick = (e) => {
   e.stopPropagation();
   copyMenu.querySelector('[data-copy="shelf"]').disabled = shelfCount() === 0;
+  const presetBtn = copyMenu.querySelector('[data-copy="preset"]');
+  const editing = editingName();
+  presetBtn.disabled = !editing;
+  presetBtn.textContent = editing ? `Embed · preset "${editing}"` : "Embed · preset ref";
   copyMenu.hidden = !copyMenu.hidden;
 };
 copyMenu.onclick = (e) => {
@@ -1092,6 +1102,7 @@ copyMenu.onclick = (e) => {
   if (!act) return;
   if (act === "config") copyText(JSON.stringify(exportable(fig.config), null, 2), "config");
   else if (act === "embed") copyText(embedSnippet(), "embed snippet");
+  else if (act === "preset" && editingName()) copyText(presetSnippet(editingName()), "preset embed");
   else if (act === "shelf") copyText(JSON.stringify(loadShelf(), null, 2), "shelf → vaiven.presets.json");
   closeCopyMenu();
 };
@@ -1263,7 +1274,9 @@ addEventListener("resize", () => {
 //   static — any plain file server: sessionStorage, so a new tab opens
 //            empty but a reload doesn't wipe it. Export via COPY ▾ · Shelf;
 //            import by dropping a vaiven.presets.json onto the row.
-// Either way the shipped site still gets inlined configs.
+// The shelf is the source of truth: sites serve it and embeds reference
+// entries by name (<vaiven-figure preset="hero">); inline configs are for
+// per-instance overrides or contexts that can't fetch.
 const SHELF_KEY = "vaiven.shelf";
 const shelfWrap = $("#shelf");
 const shelfCards = [];

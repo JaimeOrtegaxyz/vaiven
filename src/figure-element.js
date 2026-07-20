@@ -3,12 +3,23 @@
  *
  * Usage:
  *   <script type="module" src=".../figure-element.js"></script>
- *   <vaiven-figure config='{"layout":"ring","count":56}'></vaiven-figure>
+ *   <vaiven-figure preset="hero"></vaiven-figure>
  *   <vaiven-figure src="/figures/hero.json"></vaiven-figure>
+ *   <vaiven-figure config='{"layout":"ring","count":56}'></vaiven-figure>
+ *
+ * `preset="hero"` resolves the named entry from /vaiven.presets.json (the
+ * project shelf) — the shelf is the source of truth, so editing the preset
+ * changes what the site serves. `src` fetches a config JSON; a `#name`
+ * fragment (src="/my-shelf.json#hero") picks an entry out of a preset map,
+ * and `src` + `preset` together read `preset` from a custom shelf URL.
+ * Concurrent fetches of the same file are deduped, so a page of figures
+ * costs one request.
  *
  * <gen-figure> is registered as a legacy alias.
  * Size it with CSS; the host is display:block with a default 340/270
- * aspect-ratio. `config` merges on top of `src` when both are set.
+ * aspect-ratio. `config` merges on top of the fetched config when both are
+ * set (per-instance override); if the fetch fails, `config` alone still
+ * renders, so an inline snapshot doubles as an offline fallback.
  */
 
 import { createFigure, mergeConfig, DEFAULTS, FALLBACK } from "./figure.js";
@@ -17,8 +28,27 @@ import { createFigure, mergeConfig, DEFAULTS, FALLBACK } from "./figure.js";
 // safe no-op: the class falls back to a dummy base and registration is skipped.
 const Base = typeof HTMLElement !== "undefined" ? HTMLElement : class {};
 
+const SHELF_URL = "/vaiven.presets.json";
+
+// Dedupes the burst of identical shelf fetches when a page of figures
+// connects. Entries drop right after settling, so a later reload (attribute
+// change, SPA navigation) refetches fresh — live edits stay live.
+const inflight = new Map();
+function fetchJson(url) {
+  let p = inflight.get(url);
+  if (!p) {
+    p = fetch(url).then((r) => {
+      if (!r.ok) throw new Error(r.status + " " + r.statusText);
+      return r.json();
+    });
+    inflight.set(url, p);
+    p.catch(() => {}).finally(() => setTimeout(() => inflight.delete(url), 0));
+  }
+  return p;
+}
+
 class VaivenFigure extends Base {
-  static observedAttributes = ["config", "src"];
+  static observedAttributes = ["config", "src", "preset"];
 
   #fig = null;
   #canvas = null;
@@ -49,12 +79,22 @@ class VaivenFigure extends Base {
     const token = ++this.#token;
     let config = null;
     const src = this.getAttribute("src");
+    const preset = this.getAttribute("preset");
     try {
-      if (src) {
-        config = await (await fetch(src)).json();
+      if (src || preset) {
+        const hash = src ? src.indexOf("#") : -1;
+        const file = (hash === -1 ? src : src.slice(0, hash)) || SHELF_URL;
+        const name = hash !== -1 ? decodeURIComponent(src.slice(hash + 1)) : preset;
+        const json = await fetchJson(file);
+        if (name) {
+          config = json && typeof json === "object" ? json[name] : null;
+          if (config == null) throw new Error(`preset "${name}" not found in ${file}`);
+        } else {
+          config = json;
+        }
       }
     } catch (err) {
-      console.warn("<vaiven-figure>failed to load config:", err);
+      console.warn("<vaiven-figure> failed to load config:", err);
       config = null;
     }
     if (token !== this.#token || !this.isConnected) return;

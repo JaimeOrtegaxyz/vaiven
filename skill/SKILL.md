@@ -109,18 +109,35 @@ If `vaiven` isn't a dependency yet:
 Wire the one-time registration in the app entry: `import "vaiven/element";`
 (web component) or `import { createFigure } from "vaiven";` (canvas API).
 
-### 5 — Embed (framework-aware, inline the config)
+### 5 — Embed (framework-aware, reference the shelf)
 
-Insert into the located file. **Inline the chosen config** — do not make the
-site depend on the shelf at runtime. Use `config` (inline JSON) or `src` (a
-committed JSON file).
+**Default: embed by reference.** Save the chosen config to the shelf named
+for its slot, make sure `vaiven.presets.json` is served by the site (put it
+where static assets live: Next/Vite `public/`, plain sites the web root),
+and embed the name:
 
 ```html
-<vaiven-figure config='{"layout":"ring","count":56,"floor":0.2}' style="max-width:480px"></vaiven-figure>
+<vaiven-figure preset="hero" style="max-width:480px"></vaiven-figure>
 ```
 
-- **React/Next**: `<vaiven-figure config={JSON.stringify(cfg)} style={{maxWidth:480}} />`, or `createFigure` against a `useRef` canvas in `useEffect` (call `fig.destroy()` on cleanup).
+The shelf is the source of truth: editing the preset (workspace or file)
+changes what the site serves on next load — no re-sync step. Fetches are
+deduped (a page of figures = one request), and a broken reference renders
+the loud fallback figure, impossible to miss.
+
+- **React/Next**: `<vaiven-figure preset="hero" style={{maxWidth:480}} />` —
+  a plain string attribute, no `JSON.stringify` needed. For the canvas API,
+  `createFigure` against a `useRef` canvas in `useEffect` (call
+  `fig.destroy()` on cleanup).
 - **Plain HTML, no bundler**: vendor the files and `<script type="module" src="/vendor/vaiven/figure-element.js">`.
+- **Custom shelf location**: `src="/assets/my-shelf.json#hero"` (or `src` +
+  `preset` together).
+
+**Inline `config` when the reference can't work or must not move**: contexts
+with no server (`file://`, sandboxed embeds, email-ish surfaces), or when the
+user asks to freeze a figure at ship time. Inline on top of a `preset` is a
+per-instance override (same preset, different `bg`) and doubles as a fallback
+if the fetch fails.
 
 Size with CSS (host is `display:block`, default `aspect-ratio: 340/270`). Size
 the SLOT, not the figure — the figure crops/fits into whatever CSS box you give
@@ -144,13 +161,16 @@ project root: **`vaiven.presets.json`** — a flat map of `name → config`:
 
 - "save this as `hero`" → add/replace that key (create the file if absent).
 - "list my vaiven looks" → read and summarize the keys.
-- "put `hero` and `footer-calm` here" → read those configs and inline-embed them.
+- "put `hero` and `footer-calm` here" → embed `preset="hero"` /
+  `preset="footer-calm"` (and check the shelf is served — step 5).
 
-Keep it to the single file; never scaffold folders. The shelf is a design-time
-library for the human + agent — the shipped site still gets inlined configs.
-When the playground runs via `npx vaiven` in the project, its SHELF row reads
-and writes this exact file live; served statically it falls back to COPY
-SHELF / drag-drop import of the same shape.
+Keep it to the single file; never scaffold folders. The shelf is not just a
+design-time library — it is the site's figure storage: embeds name their
+entry, so the shelf always answers "what's on the site". Ship it with the
+site's static assets. When the playground runs via `npx vaiven` in the
+project, its SHELF row reads and writes this exact file live (and serves it
+at `/vaiven.presets.json`); served statically it falls back to COPY SHELF /
+drag-drop import of the same shape.
 
 ## Config quick reference
 

@@ -120,6 +120,13 @@ async function handleStatic(req, res, pathname) {
     res.writeHead(405, { allow: "GET, HEAD" });
     return res.end();
   }
+  // The shelf at its canonical URL, exactly as a deployed site would serve
+  // it — <vaiven-figure preset="…"> resolves here like anywhere else.
+  if (pathname === "/vaiven.presets.json") {
+    const body = JSON.stringify(await readShelf(), null, 2);
+    res.writeHead(200, { "content-type": MIME[".json"], "cache-control": "no-store" });
+    return res.end(req.method === "HEAD" ? undefined : body);
+  }
   if (pathname === "/") {
     res.writeHead(302, { location: "/playground/" });
     return res.end();

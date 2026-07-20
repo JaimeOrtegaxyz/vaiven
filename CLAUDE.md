@@ -34,8 +34,9 @@ real web projects; the **playground** is the instrument used to compose them.
   statically it falls back to sessionStorage + COPY/drag-drop import. This is
   the UI surface — hold it to the design system below.
 - `bin/vaiven.mjs` — the workspace server behind `npx vaiven` (zero-dep
-  node:http): serves the playground from the installed package and exposes
-  GET/PUT `/api/shelf` against `vaiven.presets.json` in the cwd.
+  node:http): serves the playground from the installed package, exposes
+  GET/PUT `/api/shelf` against `vaiven.presets.json` in the cwd, and serves
+  that shelf at `/vaiven.presets.json` (like a deployed site would).
 - `skill/` — the shippable Claude skill (`SKILL.md` + `reference/config.md` +
   `install.sh`). The consumer-facing product.
 - `promo/` — a Remotion promo video (React, **its own** `package.json`/deps;
@@ -58,8 +59,13 @@ From `figure.js`:
 - Config helpers: `mergeConfig(base, patch)`, `normalizeConfig(patch)` (maps
   legacy keys), `randomConfig(rand?)`, `mutateConfig(cfg, amount?, rand?)`.
 
-`<vaiven-figure>` attributes: `config` (inline JSON) and `src` (URL to a JSON
-config); `config` merges on top of `src`. Host is `display:block`, default
+`<vaiven-figure>` attributes: `preset` (named entry in `/vaiven.presets.json`
+— the shelf is the source of truth: sites serve it, embeds reference it by
+name, editing a preset changes what the site serves), `src` (URL to a config
+JSON; `#name` fragment picks an entry from a preset map), and `config`
+(inline JSON — merges on top of the fetched config as per-instance override,
+renders alone if the fetch fails, and is the tool for no-server contexts).
+Shelf fetches are deduped per page. Host is `display:block`, default
 `aspect-ratio: 340/270`; size it with CSS. `.figure` property exposes the live
 engine handle. `<gen-figure>` is a legacy alias. Built in: offscreen pause, `prefers-reduced-motion` static
 frame, DPR/resize handling, hold-to-accelerate ×10, pointer-reshapes-spread.

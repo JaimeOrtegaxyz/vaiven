@@ -28,10 +28,14 @@ import "vaiven/element"; // registers <vaiven-figure> (no-op during SSR)
 ```
 
 ```html
+<!-- reference a preset by name — resolved from /vaiven.presets.json: -->
+<vaiven-figure preset="hero" style="max-width:480px"></vaiven-figure>
+
+<!-- or inline the config: -->
 <vaiven-figure config='{"layout":"wave-x","count":65,"twist":4.7,"floor":0.2}'
                style="max-width:480px"></vaiven-figure>
 
-<!-- or from a config file: -->
+<!-- or fetch any config file (a #name picks an entry from a preset map): -->
 <vaiven-figure src="/figures/hero.json"></vaiven-figure>
 ```
 
@@ -55,6 +59,15 @@ Configs are fully self-contained — even custom SVG shapes travel inside the
 JSON as path data. An embed with no config (or a failed load) renders a
 deliberately loud green/pink fallback figure, so a broken embed is
 impossible to miss. TypeScript types for every knob ship with the package.
+
+**The shelf is the source of truth.** A project's figures live in one file,
+`vaiven.presets.json`, served by the site like any static asset. Embeds
+reference entries by name (`preset="hero"`); editing a preset in the
+workspace changes what the site serves — save, reload, done, no re-sync. A
+page full of figures costs one request (fetches are deduped). Inline
+`config` merges on top of the fetched preset (per-instance overrides — same
+preset, different `bg`), renders alone if the fetch fails, and stays the
+right tool where nothing can be fetched (`file://`, sandboxed embeds).
 
 **The config is the API.** Projects accumulate configs — in
 `vaiven.presets.json`, in embeds, in links. A saved config keeps rendering
@@ -93,10 +106,12 @@ npx vaiven
 ```
 
 This serves the playground *for that project*: the SHELF row reads and
-writes `vaiven.presets.json` at the project root, live. Open the workspace,
-see every saved look the project has, tweak, rename, delete — then embed a
-config yourself or hand the shelf to an agent to wire in. (`--port`,
-`--no-open`, `--shelf <path>`, `--help`.)
+writes `vaiven.presets.json` at the project root, live — and the server
+also serves the shelf at `/vaiven.presets.json`, exactly like the deployed
+site would. Open the workspace, see every saved look the project has,
+tweak, rename, delete — every `preset="…"` embed picks up the edit on the
+next reload. COPY ▾ hands you the reference snippet for the look you're
+editing. (`--port`, `--no-open`, `--shelf <path>`, `--help`.)
 
 In this repo, any static server works too (`python3 -m http.server 4633`);
 without the workspace server behind it, the shelf falls back to
