@@ -1,7 +1,9 @@
 # Changelog
 
-## Unreleased
+## 0.1.1 — unreleased
 
+- Playground: randomize (`R`) keeps a chosen custom SVG shape — random looks
+  rotate through it; built-in shapes still randomize freely.
 - `npx vaiven` now resolves the shelf to where the site serves static files:
   an existing `public/` or `static/` shelf wins, new shelves are created
   there when the directory exists, and a root shelf next to an unused static

@@ -1042,6 +1042,8 @@ function randomize() {
   rc.colors = cur.colors;
   for (const k of ["fillAlpha", "strokeAlpha", "blend", "trail", "lineWidth",
                    "zoom", "offsetX", "offsetY", "rotate", "path"]) rc[k] = cur[k];
+  // a chosen custom shape is a deliberate constraint — rotate looks through it
+  if (cur.shape === "custom" && cur.path) rc.shape = "custom";
   applyConfig(rc);
   activeName = null; // a fresh document — no longer editing a shelf look
 }
