@@ -6,8 +6,14 @@
   "license": "MIT",
   "author": "Jaime Ortega",
   "exports": {
-    ".": "./src/figure.js",
-    "./element": "./src/figure-element.js"
+    ".": {
+      "types": "./src/figure.d.ts",
+      "default": "./src/figure.js"
+    },
+    "./element": {
+      "types": "./src/figure-element.d.ts",
+      "default": "./src/figure-element.js"
+    }
   },
   "bin": {
     "vaiven": "bin/vaiven.mjs"
@@ -37,6 +43,8 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/JaimeOrtegaxyz/vaiven"
-  }
+    "url": "git+https://github.com/JaimeOrtegaxyz/vaiven.git"
+  },
+  "homepage": "https://github.com/JaimeOrtegaxyz/vaiven#readme",
+  "bugs": "https://github.com/JaimeOrtegaxyz/vaiven/issues"
 }
