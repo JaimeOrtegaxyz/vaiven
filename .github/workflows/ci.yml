@@ -1,0 +1,35 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - name: Syntax-check the workspace server
+        run: node --check bin/vaiven.mjs
+      - name: Import the engine and element (SSR path)
+        run: |
+          node --input-type=module -e "
+            import { createFigure, mergeConfig, mutateConfig, DEFAULTS, SHAPES } from './src/figure.js';
+            import './src/figure-element.js';
+            if (!SHAPES.includes('star')) throw new Error('SHAPES missing star');
+            if (mergeConfig(DEFAULTS, { count: undefined }).count !== DEFAULTS.count)
+              throw new Error('undefined clobbered a default');
+            const m = mutateConfig({ layout: 'ring' });
+            for (const [k, v] of Object.entries(m))
+              if (typeof v === 'number' && !Number.isFinite(v)) throw new Error('NaN knob: ' + k);
+            console.log('engine invariants OK');
+          "
+      - name: Pack check (published file set stays complete)
+        run: npm pack --dry-run
