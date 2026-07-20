@@ -188,5 +188,5 @@ drag-drop import of the same shape.
 ## Config quick reference
 
 Layouts: `wave-x wave-y ring spiral dial matrix`. Shapes: `circle square
-triangle diamond pentagon hexagon star custom`(+`path`). See
+triangle diamond pentagon hexagon custom`(+`path`). See
 `reference/config.md` for every knob, ranges, and the color/ramp model.

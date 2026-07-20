@@ -14,7 +14,7 @@ plain; omit anything you don't change.
 ## Shape
 | key | default | range | meaning |
 | --- | --- | --- | --- |
-| `shape` | `"circle"` | circle, square, triangle, diamond, pentagon, hexagon, star, custom | primitive |
+| `shape` | `"circle"` | circle, square, triangle, diamond, pentagon, hexagon, custom | primitive |
 | `path` | `""` | SVG path `d` | used when `shape:"custom"`; travels inside the JSON |
 | `aspect` | 1 | 0.2–5 | wide/tall squash, area-preserving |
 | `roundness` | 0 | 0–1 | corner rounding for angular shapes |

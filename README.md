@@ -99,7 +99,7 @@ the same figure across patch and minor versions.
 
 - **Pattern**: `layout` (wave-x, wave-y, ring, spiral, dial, matrix) placed
   by `count`, `ampX`/`ampY`, `freq`.
-- **Shape**: circle, square, triangle, diamond, pentagon, hexagon, star, or any
+- **Shape**: circle, square, triangle, diamond, pentagon, hexagon, or any
   single-path SVG (`shape: "custom"` + `path`); squash with `aspect`
   (area-preserving), round corners with `roundness`.
 - **Size range**: `size` (the largest) + `floor` (the smallest, as a

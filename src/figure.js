@@ -14,7 +14,7 @@
 const TAU = Math.PI * 2;
 
 export const LAYOUTS = ["wave-x", "wave-y", "ring", "spiral", "dial", "matrix"];
-export const SHAPES = ["circle", "square", "triangle", "diamond", "pentagon", "hexagon", "star", "custom"];
+export const SHAPES = ["circle", "square", "triangle", "diamond", "pentagon", "hexagon", "custom"];
 export const BLENDS = ["normal", "multiply", "screen", "lighter"];
 export const MIRRORS = ["off", "x", "y", "xy"];
 
@@ -25,19 +25,18 @@ const BLEND_MAP = {
   lighter: "lighter",
 };
 
-// [sides, first-vertex angle, inner-radius ratio for stars]
+// [sides, first-vertex angle]
 const POLYGONS = {
   square: [4, -Math.PI / 4],
   triangle: [3, -Math.PI / 2],
   diamond: [4, -Math.PI / 2],
   pentagon: [5, -Math.PI / 2],
   hexagon: [6, -Math.PI / 2],
-  star: [10, -Math.PI / 2, 0.45],
 };
 
 export const DEFAULTS = {
   layout: "wave-x", // wave-x | wave-y | ring | spiral | dial | matrix
-  shape: "circle",  // circle | square | triangle | diamond | pentagon | hexagon | star | custom
+  shape: "circle",  // circle | square | triangle | diamond | pentagon | hexagon | custom
   path: "",  //       SVG path data, used when shape is "custom"
   count: 60, //       number of shapes drawn
   size: 1, //         size of the largest shapes
@@ -188,12 +187,11 @@ function getCustomPath(d) {
 
 /** Trace a (possibly rounded) polygon inscribed in the rx/ry ellipse. */
 function tracePolygon(ctx, spec, rx, ry, roundness) {
-  const [sides, offset, inner] = spec;
+  const [sides, offset] = spec;
   const pts = [];
   for (let k = 0; k < sides; k++) {
     const ang = offset + (k / sides) * TAU;
-    const rr = inner && k % 2 ? inner : 1;
-    pts.push([Math.cos(ang) * rx * rr, Math.sin(ang) * ry * rr]);
+    pts.push([Math.cos(ang) * rx, Math.sin(ang) * ry]);
   }
   if (roundness < 0.01) {
     ctx.moveTo(pts[0][0], pts[0][1]);

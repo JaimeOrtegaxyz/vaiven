@@ -6,7 +6,7 @@
 export type Layout = "wave-x" | "wave-y" | "ring" | "spiral" | "dial" | "matrix";
 export type Shape =
   | "circle" | "square" | "triangle" | "diamond"
-  | "pentagon" | "hexagon" | "star" | "custom";
+  | "pentagon" | "hexagon" | "custom";
 export type Blend = "normal" | "multiply" | "screen" | "lighter";
 export type Mirror = "off" | "x" | "y" | "xy";
 

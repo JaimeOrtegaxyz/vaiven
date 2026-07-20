@@ -72,7 +72,7 @@ there and keep whatever looks best, meaning be damned.
 | dark hero / feature section | phosphor (strokeAlpha 0.7–1, low fillAlpha, screen/lighter) or comet (trail 0.8–0.92, lighter, stroke-only) |
 
 **Shape is a third axis**: `circle | square | triangle | diamond | pentagon |
-hexagon | star`, all inscribed in the same ellipse so `aspect` (area-preserving
+hexagon`, all inscribed in the same ellipse so `aspect` (area-preserving
 squash) and `roundness` (corner rounding) work identically across them — or
 any single-path SVG via `shape: "custom"` + `path`. Size range is `size`
 (the largest shapes) plus `floor` (the smallest, as a fraction of size;

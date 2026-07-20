@@ -23,7 +23,7 @@ jobs:
           node --input-type=module -e "
             import { createFigure, mergeConfig, mutateConfig, DEFAULTS, SHAPES } from './src/figure.js';
             import './src/figure-element.js';
-            if (!SHAPES.includes('star')) throw new Error('SHAPES missing star');
+            if (SHAPES.includes('star')) throw new Error('star was removed from the product');
             if (mergeConfig(DEFAULTS, { count: undefined }).count !== DEFAULTS.count)
               throw new Error('undefined clobbered a default');
             const m = mutateConfig({ layout: 'ring' });

@@ -2,6 +2,9 @@
 
 ## 0.1.1 — unreleased
 
+- Removed the `star` shape — six built-ins remain (circle, square, triangle,
+  diamond, pentagon, hexagon) plus `custom`. A `shape: "star"` config now
+  renders circles.
 - Playground: randomize (`R`) keeps a chosen custom SVG shape — random looks
   rotate through it; built-in shapes still randomize freely.
 - `npx vaiven` now resolves the shelf to where the site serves static files:
