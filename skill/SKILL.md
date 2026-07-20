@@ -101,13 +101,15 @@ refine, not fire-and-forget.
 
 If `vaiven` isn't a dependency yet:
 
-- Published: `npm i vaiven`.
-- While private/unpublished: install from the tarball (`npm i ./vaiven-x.y.z.tgz`)
-  or GitHub (`npm i github:JaimeOrtegaxyz/vaiven`), or vendor `src/figure.js` +
-  `src/figure-element.js` into `public/vendor/vaiven/`.
+- `npm i @jaimeortega/vaiven` (published; unscoped `vaiven` is blocked by
+  npm's name-similarity rule). The bin is still plain `vaiven`, so
+  `npx vaiven` works inside the project after install.
+- No bundler / no npm: vendor `src/figure.js` + `src/figure-element.js` into
+  `public/vendor/vaiven/` (plain ESM, zero deps).
 
-Wire the one-time registration in the app entry: `import "vaiven/element";`
-(web component) or `import { createFigure } from "vaiven";` (canvas API).
+Wire the one-time registration in the app entry:
+`import "@jaimeortega/vaiven/element";` (web component) or
+`import { createFigure } from "@jaimeortega/vaiven";` (canvas API).
 
 ### 5 — Embed (framework-aware, reference the shelf)
 

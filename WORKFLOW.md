@@ -110,7 +110,7 @@ named for the slot (e.g. `hero`).
 
 ## Step 5 — Install & embed (mode B)
 
-1. `npm i vaiven` — or copy `src/figure.js` + `src/figure-element.js` into the
+1. `npm i @jaimeortega/vaiven` — or copy `src/figure.js` + `src/figure-element.js` into the
    target repo (e.g. `public/vendor/vaiven/` — they're plain ESM, zero deps).
 2. Put the chosen looks in the shelf (`vaiven.presets.json`) and serve it with
    the site's static assets (Next/Vite `public/`, plain sites the web root).

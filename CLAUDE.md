@@ -48,7 +48,7 @@ real web projects; the **playground** is the instrument used to compose them.
 ## Engine public API
 
 `import` surface (package `exports`): `"."` → `src/figure.js`,
-`"vaiven/element"` → `src/figure-element.js`.
+`"@jaimeortega/vaiven/element"` → `src/figure-element.js`.
 
 From `figure.js`:
 - `createFigure(canvas, config)` → handle `{ canvas, config (getter),
@@ -114,7 +114,9 @@ press scale 0.96; `prefers-reduced-motion` disables all of it.
 - Engine: nothing to build — it's shipped source.
 - Promo video: `cd promo && npm i`, then `npm run studio` (Remotion Studio),
   `npm run render` (→ `out/vaiven-promo.mp4`), or `npm run still`.
-- Package is unpublished (`vaiven` on npm not yet claimed). Consumers vendor
-  `src/` or install from a local path / GitHub. Do not `npm publish` without
-  explicit go-ahead.
+- Published as **`@jaimeortega/vaiven`** (npm's similarity rule blocks
+  unscoped `vaiven` — too close to `raven`). The bin stays `vaiven`, so
+  `npx vaiven` works in any project that has it installed. Do not
+  `npm publish` (new versions) without explicit go-ahead; bump the version
+  first, `publishConfig.access` is already public.
 </content>

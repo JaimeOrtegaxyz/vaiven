@@ -20,11 +20,11 @@ accelerate it ×10.
 ## Quick start
 
 ```sh
-npm i vaiven
+npm i @jaimeortega/vaiven
 ```
 
 ```js
-import "vaiven/element"; // registers <vaiven-figure> (no-op during SSR)
+import "@jaimeortega/vaiven/element"; // registers <vaiven-figure> (no-op during SSR)
 ```
 
 ```html
@@ -42,7 +42,7 @@ import "vaiven/element"; // registers <vaiven-figure> (no-op during SSR)
 Or drive a canvas directly:
 
 ```js
-import { createFigure } from "vaiven";
+import { createFigure } from "@jaimeortega/vaiven";
 
 const fig = createFigure(canvas, { layout: "ring", count: 56, orbit: 0.5 });
 // fig.set({ ... })  ·  fig.pause()  ·  fig.resume()  ·  fig.destroy()
@@ -52,7 +52,7 @@ No bundler? Vendor `src/figure.js` + `src/figure-element.js` (plain ESM,
 zero deps) or load from a CDN:
 
 ```html
-<script type="module" src="https://esm.sh/vaiven/element"></script>
+<script type="module" src="https://esm.sh/@jaimeortega/vaiven/element"></script>
 ```
 
 Configs are fully self-contained — even custom SVG shapes travel inside the

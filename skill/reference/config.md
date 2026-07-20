@@ -72,7 +72,7 @@ great for depth. Cyclic: it wraps back to the first stop.
 
 ## API
 ```js
-import { createFigure } from "vaiven";
+import { createFigure } from "@jaimeortega/vaiven";
 const fig = createFigure(canvas, config);
 fig.set(patch);   // merge new values, redraws
 fig.pause(); fig.resume(); fig.destroy();
