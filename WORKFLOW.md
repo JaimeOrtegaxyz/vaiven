@@ -112,8 +112,11 @@ named for the slot (e.g. `hero`).
 
 1. `npm i @jaimeortega/vaiven` — or copy `src/figure.js` + `src/figure-element.js` into the
    target repo (e.g. `public/vendor/vaiven/` — they're plain ESM, zero deps).
-2. Put the chosen looks in the shelf (`vaiven.presets.json`) and serve it with
-   the site's static assets (Next/Vite `public/`, plain sites the web root).
+2. Put the chosen looks in the shelf (`vaiven.presets.json`) where the site
+   serves static files, so it's reachable at `/vaiven.presets.json`
+   (Next/Vite/Astro/Nuxt `public/`, SvelteKit/Hugo `static/`, plain sites the
+   web root). `npx vaiven` resolves the shelf the same way, so the workspace
+   and the site share one file.
 3. Embed by reference — the shelf is the source of truth; editing a preset
    changes what the site serves, no re-sync:
 

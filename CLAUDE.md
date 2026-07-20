@@ -35,8 +35,12 @@ real web projects; the **playground** is the instrument used to compose them.
   the UI surface — hold it to the design system below.
 - `bin/vaiven.mjs` — the workspace server behind `npx vaiven` (zero-dep
   node:http): serves the playground from the installed package, exposes
-  GET/PUT `/api/shelf` against `vaiven.presets.json` in the cwd, and serves
-  that shelf at `/vaiven.presets.json` (like a deployed site would).
+  GET/PUT `/api/shelf` against the project's `vaiven.presets.json`, and serves
+  that shelf at `/vaiven.presets.json` (like a deployed site would). The shelf
+  resolves to where the site serves static files: existing shelf in `public/`
+  or `static/` → existing root shelf (warns if a static dir exists — the site
+  wouldn't serve it) → new shelf in `public//static/` when the dir exists →
+  root. `--shelf` overrides.
 - `skill/` — the shippable Claude skill (`SKILL.md` + `reference/config.md` +
   `install.sh`). The consumer-facing product.
 - `scripts/build-logo.mjs` — regenerates `assets/vaiven-logo.svg` (ink) and

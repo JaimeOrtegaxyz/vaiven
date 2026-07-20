@@ -114,9 +114,16 @@ Wire the one-time registration in the app entry:
 ### 5 — Embed (framework-aware, reference the shelf)
 
 **Default: embed by reference.** Save the chosen config to the shelf named
-for its slot, make sure `vaiven.presets.json` is served by the site (put it
-where static assets live: Next/Vite `public/`, plain sites the web root),
-and embed the name:
+for its slot, make sure `vaiven.presets.json` is served by the site, and
+embed the name. The one rule: **the shelf must be reachable at
+`/vaiven.presets.json` on the served site** — so it lives in whatever
+directory THIS project serves static files from. That varies by stack:
+Next/Vite/Astro/Nuxt → `public/`, SvelteKit/Hugo → `static/`, plain
+HTML/Rails → the web root / `public/`; for anything else, find where the
+project's static assets (favicon, robots.txt) live and put it beside them.
+A plain file — never a symlink (deploy steps drop them). `npx vaiven`
+resolves the same way (uses `public/`/`static/` when present, creating new
+shelves there), so the workspace and the site share one file with no flags:
 
 ```html
 <vaiven-figure preset="hero" style="max-width:480px"></vaiven-figure>
@@ -128,8 +135,10 @@ deduped (a page of figures = one request), and a broken reference renders
 the loud fallback figure, impossible to miss.
 
 - **React/Next**: `<vaiven-figure preset="hero" style={{maxWidth:480}} />` —
-  a plain string attribute, no `JSON.stringify` needed. For the canvas API,
-  `createFigure` against a `useRef` canvas in `useEffect` (call
+  a plain string attribute, no `JSON.stringify` needed. With TypeScript,
+  declare the element once in a `.d.ts` (exact snippet in
+  `reference/config.md` → Embedding) or JSX rejects the tag. For the canvas
+  API, `createFigure` against a `useRef` canvas in `useEffect` (call
   `fig.destroy()` on cleanup).
 - **Plain HTML, no bundler**: vendor the files and `<script type="module" src="/vendor/vaiven/figure-element.js">`.
 - **Custom shelf location**: `src="/assets/my-shelf.json#hero"` (or `src` +
@@ -154,8 +163,10 @@ reduced-motion, hold-to-accelerate and hover-reshape are built in — no wiring.
 
 ### 6 — The per-project shelf
 
-Named looks the user curates for THIS project live in one discreet file at the
-project root: **`vaiven.presets.json`** — a flat map of `name → config`:
+Named looks the user curates for THIS project live in one discreet file:
+**`vaiven.presets.json`**, placed where the site serves static files
+(`public/`, `static/`, or the project root for root-served sites — step 5's
+rule) — a flat map of `name → config`:
 
 ```json
 { "hero": { "layout": "ring", "count": 56, "floor": 0.2 } }

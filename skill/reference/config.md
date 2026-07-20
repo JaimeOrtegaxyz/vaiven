@@ -79,3 +79,29 @@ fig.pause(); fig.resume(); fig.destroy();
 fig.config;       // current merged config
 ```
 Also exported: `DEFAULTS`, `FALLBACK`, `randomConfig(rand)`, `mutateConfig(cfg, amount, rand)`, `mergeConfig(base, patch)`.
+
+## Embedding
+
+The shelf must be reachable at `/vaiven.presets.json` on the served site —
+place it in the project's static-assets directory: Next/Vite/Astro/Nuxt
+`public/`, SvelteKit/Hugo `static/`, plain sites the web root. A plain file,
+never a symlink. `npx vaiven` finds (or creates) it there automatically.
+
+React + TypeScript — declare the element once (e.g. `src/vaiven.d.ts`) or JSX
+rejects the tag:
+
+```ts
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+
+declare module "react" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "vaiven-figure": DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & {
+        preset?: string;
+        src?: string;
+        config?: string;
+      };
+    }
+  }
+}
+```

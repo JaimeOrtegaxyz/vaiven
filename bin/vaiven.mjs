@@ -3,8 +3,15 @@
  * `npx vaiven` — the vaiven workspace.
  *
  * Serves the playground from the installed package and gives it live
- * read/write access to THIS project's preset shelf (vaiven.presets.json in
- * the directory you run it from). Zero dependencies — node builtins only.
+ * read/write access to THIS project's preset shelf (vaiven.presets.json).
+ * Zero dependencies — node builtins only.
+ *
+ * The shelf must live where the site serves static files, so that embeds can
+ * fetch it at /vaiven.presets.json. Frameworks serve a dedicated directory
+ * (Next/Vite/Astro/Nuxt: public/, SvelteKit/Hugo: static/), plain sites serve
+ * the root — so the shelf is resolved, in order: an existing shelf in
+ * public/ or static/, an existing shelf at the root, a NEW shelf in public/
+ * or static/ when the directory exists, else the root. `--shelf` overrides.
  *
  *   npx vaiven                 serve on 4633 (or next free port) and open
  *   npx vaiven --port 5000     pick the port
@@ -13,11 +20,11 @@
  */
 
 import { createServer } from "node:http";
+import { statSync, realpathSync } from "node:fs";
 import { readFile, writeFile } from "node:fs/promises";
 import { spawn } from "node:child_process";
-import { resolve, extname, sep } from "node:path";
+import { resolve, extname, sep, basename, relative } from "node:path";
 import { fileURLToPath } from "node:url";
-import { basename } from "node:path";
 
 const PKG_ROOT = fileURLToPath(new URL("..", import.meta.url));
 const MAX_BODY = 2 * 1024 * 1024;
@@ -48,7 +55,10 @@ if (args.includes("--help") || args.includes("-h")) {
   npx vaiven                 serve the playground, open the browser
   npx vaiven --port <n>      port (default 4633; tries upward if taken)
   npx vaiven --no-open       don't open the browser
-  npx vaiven --shelf <path>  shelf file (default ./vaiven.presets.json)
+  npx vaiven --shelf <path>  shelf file (default: vaiven.presets.json found
+                             in public/, static/, or the project root — new
+                             shelves are created in public//static/ when the
+                             directory exists, so the site serves them)
 
 The SHELF row in the playground reads and writes the shelf file directly —
 saved looks land in your project, ready to embed or hand to an agent.`);
@@ -59,7 +69,41 @@ if (flagValue("--port") && !(Number.isInteger(basePort) && basePort >= 1 && base
   console.error("vaiven: --port must be an integer between 1 and 65535");
   process.exit(1);
 }
-const shelfPath = resolve(process.cwd(), flagValue("--shelf") || "vaiven.presets.json");
+// Conventional framework static dirs, in preference order. The shelf's whole
+// job is to be served at /vaiven.presets.json, so it belongs in whichever
+// directory the site actually serves.
+const STATIC_DIRS = ["public", "static"];
+function findShelf() {
+  const cwd = process.cwd();
+  const isFile = (p) => !!statSync(p, { throwIfNoEntry: false })?.isFile();
+  const isDir = (p) => !!statSync(p, { throwIfNoEntry: false })?.isDirectory();
+  const atRoot = resolve(cwd, "vaiven.presets.json");
+  const served = STATIC_DIRS.map((d) => resolve(cwd, d, "vaiven.presets.json")).find(isFile);
+  const staticDir = STATIC_DIRS.find((d) => isDir(resolve(cwd, d)));
+  if (served) {
+    // realpath: a symlinked shelf (public/ → root) is one file, not two
+    if (isFile(atRoot) && realpathSync(atRoot) !== realpathSync(served)) {
+      console.warn(
+        `vaiven: two shelf files found — using ${relative(cwd, served)} (the copy the site serves); ` +
+        `./vaiven.presets.json is ignored (delete it, or pick it with --shelf)`
+      );
+    }
+    return served;
+  }
+  if (isFile(atRoot)) {
+    if (staticDir) {
+      console.warn(
+        `vaiven: the shelf is at ./vaiven.presets.json but this project serves static files from ` +
+        `${staticDir}/ — the site can't serve it there. Fix:  mv vaiven.presets.json ${staticDir}/`
+      );
+    }
+    return atRoot;
+  }
+  return staticDir ? resolve(cwd, staticDir, "vaiven.presets.json") : atRoot;
+}
+const shelfPath = flagValue("--shelf")
+  ? resolve(process.cwd(), flagValue("--shelf"))
+  : findShelf();
 const openBrowser = !args.includes("--no-open");
 
 // ---------------------------------------------------------------------- shelf
@@ -88,7 +132,7 @@ async function handleApi(req, res, pathname) {
   if (req.method === "GET") {
     return sendJson(res, 200, {
       project: basename(process.cwd()),
-      file: basename(shelfPath),
+      file: relative(process.cwd(), shelfPath) || basename(shelfPath),
       presets: await readShelf(),
     });
   }

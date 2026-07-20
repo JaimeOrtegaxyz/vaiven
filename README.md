@@ -39,6 +39,25 @@ import "@jaimeortega/vaiven/element"; // registers <vaiven-figure> (no-op during
 <vaiven-figure src="/figures/hero.json"></vaiven-figure>
 ```
 
+React + TypeScript: declare the element once (e.g. `src/vaiven.d.ts`) so JSX
+accepts it — the attributes are plain strings, no `JSON.stringify` gymnastics:
+
+```ts
+import type { DetailedHTMLProps, HTMLAttributes } from "react";
+
+declare module "react" {
+  namespace JSX {
+    interface IntrinsicElements {
+      "vaiven-figure": DetailedHTMLProps<HTMLAttributes<HTMLElement>, HTMLElement> & {
+        preset?: string;
+        src?: string;
+        config?: string;
+      };
+    }
+  }
+}
+```
+
 Or drive a canvas directly:
 
 ```js
@@ -61,8 +80,11 @@ deliberately loud green/pink fallback figure, so a broken embed is
 impossible to miss. TypeScript types for every knob ship with the package.
 
 **The shelf is the source of truth.** A project's figures live in one file,
-`vaiven.presets.json`, served by the site like any static asset. Embeds
-reference entries by name (`preset="hero"`); editing a preset in the
+`vaiven.presets.json`, served by the site like any static asset — put it
+where your framework serves static files (Next/Vite/Astro/Nuxt: `public/`,
+SvelteKit/Hugo: `static/`, plain sites: the web root) so it's reachable at
+`/vaiven.presets.json`. Embeds reference entries by name (`preset="hero"`);
+editing a preset in the
 workspace changes what the site serves — save, reload, done, no re-sync. A
 page full of figures costs one request (fetches are deduped). Inline
 `config` merges on top of the fetched preset (per-instance overrides — same
@@ -106,9 +128,11 @@ npx vaiven
 ```
 
 This serves the playground *for that project*: the SHELF row reads and
-writes `vaiven.presets.json` at the project root, live — and the server
-also serves the shelf at `/vaiven.presets.json`, exactly like the deployed
-site would. Open the workspace, see every saved look the project has,
+writes the project's `vaiven.presets.json`, live — found in `public/` or
+`static/` when the framework has one (a new shelf is created there, so the
+site serves it with no extra step), else at the project root — and the
+server also serves the shelf at `/vaiven.presets.json`, exactly like the
+deployed site would. Open the workspace, see every saved look the project has,
 tweak, rename, delete — every `preset="…"` embed picks up the edit on the
 next reload. COPY ▾ hands you the reference snippet for the look you're
 editing. (`--port`, `--no-open`, `--shelf <path>`, `--help`.)
