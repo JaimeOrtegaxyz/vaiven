@@ -1,9 +1,15 @@
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="assets/vaiven-logo-cream.svg">
-  <img src="assets/vaiven-logo.svg" alt="vaiven" width="300">
-</picture>
+<br>
 
-*From **vaivén** — Spanish for the swing of things: a perpetual to-and-fro.*
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="assets/vaiven-logo-cream.svg">
+    <img src="assets/vaiven-logo.svg" alt="vaiven" width="300">
+  </picture>
+</p>
+
+<p align="center"><strong>vaiven</strong>, from the Spanish <em>vaivén</em> — the swing of things: a perpetual to-and-fro.</p>
+
+<br>
 
 Calm, endlessly looping generative figures for the web. One zero-dependency
 Canvas 2D engine (two plain ES modules, ~15KB) where **every animation is a
