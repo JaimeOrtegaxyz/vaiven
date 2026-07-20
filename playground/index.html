@@ -1043,6 +1043,7 @@ function randomize() {
   for (const k of ["fillAlpha", "strokeAlpha", "blend", "trail", "lineWidth",
                    "zoom", "offsetX", "offsetY", "rotate", "path"]) rc[k] = cur[k];
   applyConfig(rc);
+  activeName = null; // a fresh document — no longer editing a shelf look
 }
 
 function reset() {
@@ -1076,16 +1077,21 @@ $("#btn-redo").onclick = redo;
 $("#btn-random").onclick = randomize;
 $("#btn-reset").onclick = reset;
 // One COPY ▾ menu for every "get something out" action, so nothing competes.
+// & must be escaped first and always: HTML decodes entity-shaped sequences
+// inside attribute values, so a raw "hero&copy" would read back as "hero©".
+const attrEscape = (s, q = '"') =>
+  s.replace(/&/g, "&amp;").replace(new RegExp(q, "g"), q === '"' ? "&quot;" : "&#39;");
 const embedSnippet = () => {
-  const json = JSON.stringify(exportable(fig.config));
+  const json = attrEscape(JSON.stringify(exportable(fig.config)), "'");
   return `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
     `<vaiven-figure style="max-width:480px" config='${json}'></vaiven-figure>`;
 };
 // Reference embed: the shelf is the source of truth — the site serves
 // vaiven.presets.json and the embed names its entry.
 const presetSnippet = (name) =>
-  `<vaiven-figure preset="${name.replace(/"/g, "&quot;")}" style="max-width:480px"></vaiven-figure>`;
-const editingName = () => (activeName && activeName in loadShelf() ? activeName : null);
+  `<script type="module" src="/vendor/vaiven/figure-element.js"><\/script>\n` +
+  `<vaiven-figure preset="${attrEscape(name)}" style="max-width:480px"></vaiven-figure>`;
+const editingName = () => (activeName && Object.hasOwn(loadShelf(), activeName) ? activeName : null);
 const copyMenu = $("#copy-menu");
 const closeCopyMenu = () => { copyMenu.hidden = true; };
 $("#btn-copy").onclick = (e) => {
@@ -1329,9 +1335,10 @@ function addToShelf(name, cfg) {
   name = (name || "").trim();
   if (!name) return false;
   const s = loadShelf();
-  const verb = name in s ? "updated" : "saved";
-  s[name] = cfg;
-  saveShelf(s);
+  const verb = Object.hasOwn(s, name) ? "updated" : "saved";
+  // computed key in a literal is always an own property — a preset named
+  // "__proto__" saves as data instead of silently mutating the prototype
+  saveShelf({ ...s, [name]: cfg });
   renderShelf();
   toast(live ? verb + " “" + name + "” → " + live.file : verb + " “" + name + "”");
   return true;
@@ -1370,7 +1377,7 @@ function renderShelf() {
     thumb.append(inp);
     // Editing a loaded look: prefill its name (selected, so a new name is
     // one keystroke away) and say plainly that ↵ updates it.
-    const editing = activeName && activeName in loadShelf() ? activeName : null;
+    const editing = activeName && Object.hasOwn(loadShelf(), activeName) ? activeName : null;
     const hint = () => {
       atag.classList.remove("confirm");
       atag.textContent = editing && inp.value.trim() === editing
@@ -1396,7 +1403,7 @@ function renderShelf() {
       if (e.key === "Enter") {
         const name = inp.value.trim();
         if (!name) return;
-        if (!(name in loadShelf())) {
+        if (!Object.hasOwn(loadShelf(), name)) {
           if (addToShelf(name, exportable(fig.config))) activeName = name;
           return;
         }
@@ -1477,10 +1484,17 @@ shelfWrap.addEventListener("drop", async (e) => {
   if (!file) return;
   try {
     const obj = JSON.parse(await file.text());
-    saveShelf({ ...loadShelf(), ...obj });
+    // accept only the shelf shape ({ name: config-object, ... }) — dropping a
+    // single config or an /api/shelf response would pollute the map with
+    // scalar entries the server then rejects on every later save
+    const entries = Object.entries(obj || {}).filter(
+      ([, v]) => v && typeof v === "object" && !Array.isArray(v)
+    );
+    if (!entries.length) throw new Error("not a presets map");
+    saveShelf({ ...loadShelf(), ...Object.fromEntries(entries) });
     renderShelf();
-    toast("imported " + Object.keys(obj).length + " look(s)");
-  } catch { toast("couldn't read that presets file"); }
+    toast("imported " + entries.length + " look(s)");
+  } catch { toast("not a vaiven.presets.json — expected { name: config }"); }
 });
 
 initShelf();

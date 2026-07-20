@@ -16,7 +16,7 @@ plain; omit anything you don't change.
 | --- | --- | --- | --- |
 | `shape` | `"circle"` | circle, square, triangle, diamond, pentagon, hexagon, star, custom | primitive |
 | `path` | `""` | SVG path `d` | used when `shape:"custom"`; travels inside the JSON |
-| `aspect` | 1 | 0.25–4 | wide/tall squash, area-preserving |
+| `aspect` | 1 | 0.2–5 | wide/tall squash, area-preserving |
 | `roundness` | 0 | 0–1 | corner rounding for angular shapes |
 
 ## Size range

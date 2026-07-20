@@ -12,7 +12,7 @@
 <br>
 
 Calm, endlessly looping generative figures for the web. One zero-dependency
-Canvas 2D engine (two plain ES modules, ~15KB) where **every animation is a
+Canvas 2D engine (two plain ES modules, ~9KB gzipped) where **every animation is a
 JSON config**: many simple shapes, arranged and breathed by a couple dozen
 numbers, accumulating into living hairline patterns. Hold a figure to
 accelerate it ×10.
@@ -77,7 +77,7 @@ the same figure across patch and minor versions.
 
 - **Pattern**: `layout` (wave-x, wave-y, ring, spiral, dial, matrix) placed
   by `count`, `ampX`/`ampY`, `freq`.
-- **Shape**: circle, square, triangle, diamond, pentagon, hexagon, or any
+- **Shape**: circle, square, triangle, diamond, pentagon, hexagon, star, or any
   single-path SVG (`shape: "custom"` + `path`); squash with `aspect`
   (area-preserving), round corners with `roundness`.
 - **Size range**: `size` (the largest) + `floor` (the smallest, as a
@@ -126,8 +126,10 @@ per-session storage with COPY / drag-drop import.
 - `bin/vaiven.mjs` — the workspace server behind `npx vaiven`.
 - `playground/` — the editor; the SHELF row curates a project's saved looks
   (`vaiven.presets.json`).
+- `skill/` — the Claude skill that designs and embeds figures into real
+  projects (`SKILL.md` + config reference + installer).
 - `WORKFLOW.md` — the interview → candidates → pick → install workflow
-  (draft of the future skill). `PRODUCT.md` — design system + register.
+  behind the skill. `PRODUCT.md` — design system + register.
 
 ## Built-in behavior
 

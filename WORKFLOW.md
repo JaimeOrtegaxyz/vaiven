@@ -1,12 +1,12 @@
-# Vaiven — Workflow (proto-skill)
+# Vaiven — Workflow
 
 Produces generative canvas figures for web projects: calm, perpetually looping
 abstractions built from many simple primitives, in several ink styles — etched
 (tonal fill + hairline stroke), veil (translucent multiply washes), phosphor
 (luminous lines on dark), comet (motion trails) — embeddable anywhere as a
 `<vaiven-figure>` web component driven by a JSON config. This document is the
-operational draft of the future skill — refine it here, then convert with
-skill-creator.
+operational reference behind `skill/SKILL.md` — when the workflow changes,
+change both (see CLAUDE.md).
 
 ## Aesthetic principles (non-negotiable)
 
@@ -72,7 +72,7 @@ there and keep whatever looks best, meaning be damned.
 | dark hero / feature section | phosphor (strokeAlpha 0.7–1, low fillAlpha, screen/lighter) or comet (trail 0.8–0.92, lighter, stroke-only) |
 
 **Shape is a third axis**: `circle | square | triangle | diamond | pentagon |
-hexagon`, all inscribed in the same ellipse so `aspect` (area-preserving
+hexagon | star`, all inscribed in the same ellipse so `aspect` (area-preserving
 squash) and `roundness` (corner rounding) work identically across them — or
 any single-path SVG via `shape: "custom"` + `path`. Size range is `size`
 (the largest shapes) plus `floor` (the smallest, as a fraction of size;
@@ -90,7 +90,7 @@ produce coiled tubes, toruses and circular clusters).
 
 ## Step 3 — Candidates
 
-For each slot produce 3–5 configs. Start from `DEFAULTS` or a `randomConfig()`
+For each slot produce 1–3 configs. Start from `DEFAULTS` or a `randomConfig()`
 seed, then change **one dominant knob per candidate** (density, twist pitch,
 squash, or layout) so the choice reads clearly. Keep the working candidates on
 the shelf (`vaiven.presets.json`), then hand over playground URLs (the whole
@@ -135,12 +135,11 @@ Size via CSS (host is `display:block`, default `aspect-ratio: 340/270`).
 Defaults already include press-accelerate, hover-reshape, offscreen pause,
 and reduced-motion static rendering — no extra wiring.
 
-## Skill conversion checklist (later)
+## Skill backlog
 
-- [ ] SKILL.md from this doc: triggers ("we need animations for these
-      sections", "stripe-style figures", "generative figure"), the interview,
-      the territory table, install steps.
-- [ ] Point the skill at the published `vaiven` package (or bundle `src/`) to copy into target repos.
+The skill exists (`skill/SKILL.md` + `reference/config.md` + `install.sh`).
+Still open:
+
 - [ ] Include the palette-extraction recipe as a scripted step.
 - [ ] Optional: headless candidate-grid generation (render N configs to a
       review page automatically).

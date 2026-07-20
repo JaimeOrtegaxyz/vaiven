@@ -6,8 +6,8 @@
 engine where every animation is a JSON config, a `<vaiven-figure>` web
 component for embedding, and a local playground (the UI surface) for
 composing figures.
-The eventual product is a Claude skill that generates figures for arbitrary
-web projects; the playground is the instrument used to design them.
+The product is the Claude skill (`skill/`) that generates figures for
+arbitrary web projects; the playground is the instrument used to design them.
 
 **Who**: A designer-developer composing generative animations for his own
 sites. Single local user, desktop, long focused sessions with an animation

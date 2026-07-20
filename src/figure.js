@@ -14,7 +14,7 @@
 const TAU = Math.PI * 2;
 
 export const LAYOUTS = ["wave-x", "wave-y", "ring", "spiral", "dial", "matrix"];
-export const SHAPES = ["circle", "square", "triangle", "diamond", "pentagon", "hexagon", "custom"];
+export const SHAPES = ["circle", "square", "triangle", "diamond", "pentagon", "hexagon", "star", "custom"];
 export const BLENDS = ["normal", "multiply", "screen", "lighter"];
 export const MIRRORS = ["off", "x", "y", "xy"];
 
@@ -94,9 +94,17 @@ export const FALLBACK = {
   colors: { bg: "#00FF00", fill: "#FF1490", stroke: "#1D1D1D" },
 };
 
+// Drop undefined-valued keys so `{ count: maybeUndefined }` can never
+// clobber a default into NaN (spread copies undefined; NaN survives clamps).
+function defined(obj) {
+  const out = {};
+  for (const k of Object.keys(obj)) if (obj[k] !== undefined) out[k] = obj[k];
+  return out;
+}
+
 /** Map legacy config keys (pre-rename) onto the current schema. */
 export function normalizeConfig(patch = {}) {
-  const p = { ...patch };
+  const p = defined(patch);
   if (p.shape === "ellipse") p.shape = "circle";
   if (p.shape === "rect") p.shape = "square";
   if (typeof p.mirror === "boolean") p.mirror = p.mirror ? "x" : "off";
@@ -118,8 +126,8 @@ export function normalizeConfig(patch = {}) {
 export function mergeConfig(base, patch = {}) {
   const p = normalizeConfig(patch);
   const out = { ...base, ...p };
-  out.colors = { ...base.colors, ...(p.colors || {}) };
-  out.interact = { ...base.interact, ...(p.interact || {}) };
+  out.colors = { ...base.colors, ...defined(p.colors || {}) };
+  out.interact = { ...base.interact, ...defined(p.interact || {}) };
   return out;
 }
 
@@ -585,7 +593,10 @@ export function randomConfig(rand = Math.random) {
 }
 
 export function mutateConfig(cfg, amount = 0.25, rand = Math.random) {
-  const out = mergeConfig(cfg, {});
+  // fill from DEFAULTS first: mutating a partial config would otherwise
+  // produce NaN knobs (undefined + delta), and the return type promises a
+  // fully resolved config
+  const out = mergeConfig(DEFAULTS, cfg);
   for (const [key, [min, max, round]] of Object.entries(MUTABLE)) {
     if (rand() < 0.6) {
       let v = out[key] + (rand() * 2 - 1) * amount * (max - min);

@@ -26,7 +26,8 @@
     "bin",
     "playground",
     "assets/fonts",
-    "assets/vaiven-logo.svg"
+    "assets/vaiven-logo.svg",
+    "assets/vaiven-logo-cream.svg"
   ],
   "sideEffects": [
     "./src/figure-element.js"

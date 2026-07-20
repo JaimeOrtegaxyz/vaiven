@@ -84,11 +84,18 @@ class VaivenFigure extends Base {
       if (src || preset) {
         const hash = src ? src.indexOf("#") : -1;
         const file = (hash === -1 ? src : src.slice(0, hash)) || SHELF_URL;
-        const name = hash !== -1 ? decodeURIComponent(src.slice(hash + 1)) : preset;
+        // an empty fragment falls back to `preset` rather than shadowing it
+        const name = (hash !== -1 ? decodeURIComponent(src.slice(hash + 1)) : "") || preset;
+        if (hash !== -1 && !name) throw new Error(`empty preset name in src="${src}"`);
         const json = await fetchJson(file);
+        if (!json || typeof json !== "object" || Array.isArray(json)) {
+          throw new Error(`config JSON from ${file} is not an object`);
+        }
         if (name) {
-          config = json && typeof json === "object" ? json[name] : null;
-          if (config == null) throw new Error(`preset "${name}" not found in ${file}`);
+          config = json[name];
+          if (!config || typeof config !== "object" || Array.isArray(config)) {
+            throw new Error(`preset "${name}" not found in ${file}`);
+          }
         } else {
           config = json;
         }
@@ -102,13 +109,17 @@ class VaivenFigure extends Base {
     const inline = this.getAttribute("config");
     if (inline) {
       try {
-        config = mergeConfig(mergeConfig(DEFAULTS, config || {}), JSON.parse(inline));
+        config = mergeConfig(config || {}, JSON.parse(inline));
       } catch (err) {
-        console.warn("<vaiven-figure>bad config JSON:", err);
+        console.warn("<vaiven-figure> bad config JSON:", err);
       }
     }
     // no attributes at all, or every source failed → loud missing-config signal
     if (config == null) config = FALLBACK;
+    // bake in DEFAULTS so a config change fully REPLACES the previous one:
+    // set() merges patches, and a partial config would otherwise inherit
+    // stale knobs from whatever rendered before
+    config = mergeConfig(DEFAULTS, config);
     if (this.#fig) this.#fig.set(config);
     else this.#fig = createFigure(this.#canvas, config);
   }

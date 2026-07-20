@@ -55,6 +55,10 @@ saved looks land in your project, ready to embed or hand to an agent.`);
   process.exit(0);
 }
 const basePort = Number(flagValue("--port") || process.env.PORT || 4633);
+if (flagValue("--port") && !(Number.isInteger(basePort) && basePort >= 1 && basePort <= 65535)) {
+  console.error("vaiven: --port must be an integer between 1 and 65535");
+  process.exit(1);
+}
 const shelfPath = resolve(process.cwd(), flagValue("--shelf") || "vaiven.presets.json");
 const openBrowser = !args.includes("--no-open");
 
@@ -159,12 +163,20 @@ async function handleStatic(req, res, pathname) {
 
 // --------------------------------------------------------------------- server
 const server = createServer(async (req, res) => {
-  const { pathname } = new URL(req.url, "http://localhost");
   try {
+    // Only answer for localhost hosts: a remote page that rebinds its DNS to
+    // 127.0.0.1 would otherwise reach /api/shelf (a file write) same-origin.
+    const host = String(req.headers.host || "").replace(/:\d+$/, "");
+    if (host !== "localhost" && host !== "127.0.0.1" && host !== "[::1]") {
+      res.writeHead(403, { "content-type": MIME[".txt"] });
+      return res.end("forbidden host");
+    }
+    const { pathname } = new URL(req.url, "http://localhost");
     if (pathname.startsWith("/api/")) await handleApi(req, res, pathname);
     else await handleStatic(req, res, pathname);
   } catch (err) {
-    sendJson(res, 500, { error: String(err && err.message || err) });
+    if (!res.headersSent) sendJson(res, 500, { error: String(err && err.message || err) });
+    else res.end();
   }
 });
 
@@ -177,7 +189,7 @@ function listen(port, triesLeft) {
     }
   });
   server.listen(port, "127.0.0.1", () => {
-    const url = `http://localhost:${port}/playground/`;
+    const url = `http://localhost:${server.address().port}/playground/`;
     console.log(`vaiven workspace  ${url}`);
     console.log(`project shelf     ${shelfPath}`);
     if (openBrowser) {
